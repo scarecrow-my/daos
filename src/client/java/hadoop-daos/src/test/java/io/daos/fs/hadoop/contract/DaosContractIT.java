@@ -18,7 +18,6 @@
 
 package io.daos.fs.hadoop.contract;
 
-import io.daos.fs.hadoop.DaosUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 import org.apache.hadoop.fs.contract.AbstractBondedFSContract;
