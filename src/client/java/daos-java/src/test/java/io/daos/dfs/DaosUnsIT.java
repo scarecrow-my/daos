@@ -112,7 +112,7 @@ public class DaosUnsIT {
     }
     Assert.assertNotNull(ee);
     Assert.assertTrue(ee.getMessage().contains(cid));
-    Assert.assertTrue(ee.getMessage().contains("error code: 17"));
+    Assert.assertTrue(ee.getMessage().contains("error code: 5"));
   }
 
   @Test
@@ -346,7 +346,6 @@ public class DaosUnsIT {
         10);
     } catch (Exception e) {
       ee = e;
-      e.printStackTrace();
     } finally {
       file.delete();
     }
