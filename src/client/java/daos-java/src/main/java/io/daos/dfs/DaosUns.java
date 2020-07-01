@@ -23,28 +23,33 @@
 
 package io.daos.dfs;
 
-import com.google.protobuf.TextFormat;
-import io.daos.dfs.uns.*;
-import org.apache.commons.lang.ObjectUtils;
-import org.apache.commons.lang.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import sun.nio.ch.DirectBuffer;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.google.protobuf.TextFormat;
+
+import io.daos.dfs.uns.*;
+
+import org.apache.commons.lang.ObjectUtils;
+import org.apache.commons.lang.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import sun.nio.ch.DirectBuffer;
+
 /**
  * A wrapper class of DAOS Unified Namespace. There are four DAOS UNS methods,
  * {@link #createPath()}, {@link #resolvePath(String)}, {@link #destroyPath()} and
  * {@link #parseAttribute(String)}, wrapped in this class.
+ *
  * <p>
  * Due to complexity of DAOS UNS attribute, duns_attr_t, protobuf and c plugin, protobuf-c, are introduced to
  * pass parameters accurately and efficiently. check DunsAttribute.proto and its auto-generated classes under
  * package io.daos.dfs.uns.
+ *
  * <p>
  * The typical usage is,
  * 1, create path
@@ -57,11 +62,13 @@ import java.util.Map;
  * DaosUns uns = builder.build();
  * String cid = uns.createPath();
  * </code>
+ *
  * <p>
  * 2, resolve path
  * <code>
  * DunsAttribute attribute = DaosUns.resolvePath(file.getAbsolutePath());
  * </code>
+ *
  * <p>
  * 3, check DaosUnsIT for more complex usage
  */
@@ -82,9 +89,10 @@ public class DaosUns {
    *
    * @return container UUID
    * @throws IOException
+   * {@link DaosIOException}
    */
   public String createPath() throws IOException {
-    long poolHandle = 0;
+    long poolHandle;
 
     if (attribute == null) {
       throw new IllegalStateException("DUNS attribute is not set");
@@ -96,9 +104,9 @@ public class DaosUns {
       builder.ranks, builder.poolFlags);
     try {
       String cuuid = DaosFsClient.dunsCreatePath(poolHandle, builder.path,
-        ((DirectBuffer) buffer).address(), bytes.length);
+          ((DirectBuffer) buffer).address(), bytes.length);
       log.info("UNS path {} created in pool {} and container {}",
-        builder.path, builder.poolUuid, cuuid);
+          builder.path, builder.poolUuid, cuuid);
       return cuuid;
     } finally {
       if (poolHandle != 0) {
@@ -113,6 +121,7 @@ public class DaosUns {
    * @param path OS file path
    * @return UNS attribute
    * @throws IOException
+   * {@link DaosIOException}
    */
   public static DunsAttribute resolvePath(String path) throws IOException {
     byte[] bytes = DaosFsClient.dunsResolvePath(path);
@@ -130,6 +139,7 @@ public class DaosUns {
    * @param attrName attribute name. Its length should not exceed {@value Constants#UNS_ATTR_NAME_MAX_LEN}.
    * @param value    attribute value, Its length should not exceed {@value Constants#UNS_ATTR_VALUE_MAX_LEN}.
    * @throws IOException
+   * {@link DaosIOException}
    */
   public static void setAppInfo(String path, String attrName, String value) throws IOException {
     if (StringUtils.isBlank(attrName)) {
@@ -157,6 +167,7 @@ public class DaosUns {
    * @param maxValueLen maximum attribute length. It should not exceed {@value Constants#UNS_ATTR_VALUE_MAX_LEN}.
    * @return attribute value
    * @throws IOException
+   * {@link DaosIOException}
    */
   public static String getAppInfo(String path, String attrName, int maxValueLen) throws IOException {
     if (StringUtils.isBlank(attrName)) {
@@ -180,6 +191,7 @@ public class DaosUns {
    * Destroy a container and remove the path associated with it in the UNS.
    *
    * @throws IOException
+   * {@link DaosIOException}
    */
   public void destroyPath() throws IOException {
     long poolHandle = 0;
@@ -202,6 +214,7 @@ public class DaosUns {
    * @param input attribute string
    * @return UNS attribute
    * @throws IOException
+   * {@link DaosIOException}
    */
   public static DunsAttribute parseAttribute(String input) throws IOException {
     byte[] bytes = DaosFsClient.dunsParseAttribute(input);
@@ -217,6 +230,7 @@ public class DaosUns {
    * @param appInfoAttrName app-specific attribute name
    * @return information hold in {@link DunsInfo}
    * @throws IOException
+   * {@link DaosIOException}
    */
   public static DunsInfo getAccessInfo(String path, String appInfoAttrName) throws IOException {
     return getAccessInfo(path, appInfoAttrName, io.daos.dfs.Constants.UNS_ATTR_VALUE_MAX_LEN_DEFAULT,
@@ -235,6 +249,7 @@ public class DaosUns {
    * @param expectAppInfo   expect app info? true for throwing exception if no value gets, false for ignoring quietly.
    * @return information hold in {@link DunsInfo}
    * @throws IOException
+   * {@link DaosIOException}
    */
   public static DunsInfo getAccessInfo(String path, String appInfoAttrName, int maxValueLen,
                                        boolean expectAppInfo) throws IOException {
@@ -298,6 +313,7 @@ public class DaosUns {
    * A builder class to build {@link DaosUns} instance. Most of methods are same as ones
    * in {@link io.daos.dfs.DaosFsClient.DaosFsClientBuilder}, like {@link #ranks(String)},
    * {@link #serverGroup(String)}, {@link #poolFlags(int)}.
+   *
    * <p>
    * For other methods, they are specific for DAOS UNS, like {@link #layout(Layout)} and
    * {@link #putEntry(PropType, PropValue)}. Some parameters are of types auto-generated
@@ -329,26 +345,61 @@ public class DaosUns {
       return this;
     }
 
+    /**
+     * set pool UUID.
+     *
+     * @param poolUuid
+     * pool uuid
+     * @return this object
+     */
     public DaosUnsBuilder poolId(String poolUuid) {
       this.poolUuid = poolUuid;
       return this;
     }
 
+    /**
+     * set container UUID.
+     *
+     * @param contUuid
+     * container uuid
+     * @return this object
+     */
     public DaosUnsBuilder containerId(String contUuid) {
       this.contUuid = contUuid;
       return this;
     }
 
+    /**
+     * set layout.
+     *
+     * @param layout
+     * posix or hdf5 layout
+     * @return this object
+     */
     public DaosUnsBuilder layout(Layout layout) {
       this.layout = layout;
       return this;
     }
 
+    /**
+     * set object type.
+     *
+     * @param objectType
+     * object type
+     * @return this object
+     */
     public DaosUnsBuilder objectType(DaosObjectType objectType) {
       this.objectType = objectType;
       return this;
     }
 
+    /**
+     * set chunk size.
+     *
+     * @param chunkSize
+     * chunk size
+     * @return this object
+     */
     public DaosUnsBuilder chunkSize(long chunkSize) {
       if (chunkSize < 0) {
         throw new IllegalArgumentException("chunk size should be positive integer");
@@ -357,6 +408,13 @@ public class DaosUns {
       return this;
     }
 
+    /**
+     * set if it's on lustre FS.
+     *
+     * @param onLustre
+     * true for on lustre, false otherwise.
+     * @return this object
+     */
     public DaosUnsBuilder onLustre(boolean onLustre) {
       this.onLustre = onLustre;
       return this;
@@ -368,7 +426,7 @@ public class DaosUns {
      *
      * @param propType enum values of {@link PropType}
      * @param value    value object
-     * @return
+     * @return this object
      */
     public DaosUnsBuilder putEntry(PropType propType, PropValue value) {
       switch (propType) {
@@ -377,6 +435,7 @@ public class DaosUns {
         case DAOS_PROP_CO_MIN:
         case DAOS_PROP_CO_MAX:
           throw new IllegalArgumentException("invalid property type: " + propType);
+        default: break;
       }
       propMap.put(propType, value);
       return this;
@@ -497,6 +556,13 @@ public class DaosUns {
       return reserved;
     }
 
+    /**
+     * get correct Java class for DAOS property type.
+     *
+     * @param propType
+     * DAOS property type
+     * @return Java class
+     */
     public static Class<?> getValueClass(PropType propType) {
       switch (propType) {
         case DAOS_PROP_PO_SPACE_RB:
@@ -531,10 +597,14 @@ public class DaosUns {
   }
 
   /**
+   * Main function to be called from command line.
+   *
    * @param args
+   * command line arguments.
    * @throws Exception
+   * any exception during execution
    */
-  public static void main(String args[]) throws Exception {
+  public static void main(String[] args) throws Exception {
     if (needUsage(args)) {
       String usage = getUsage();
       log.info(usage);
@@ -589,7 +659,7 @@ public class DaosUns {
     String maxLen = System.getProperty("maxlen");
     try {
       String value = getAppInfo(path, attr, maxLen == null ? Constants.UNS_ATTR_VALUE_MAX_LEN_DEFAULT :
-        Integer.valueOf(maxLen));
+          Integer.valueOf(maxLen));
       log.info("attribute({}) = value({}) get from path({})", attr, value, path);
     } catch (Exception e) {
       log.error("failed to get app info. ", e);
@@ -698,20 +768,20 @@ public class DaosUns {
     int permSet = 1 << 7;
     int perms = permGet | permDel | permSet;
     DaosAce ace = DaosAce.newBuilder()
-      .setAccessTypes(accessAllow)
-      .setPrincipal(user)
-      .setPrincipalType(aclUser)
-      .setPrincipalLen(user.length())
-      .setAllowPerms(perms)
-      .build();
+        .setAccessTypes(accessAllow)
+        .setPrincipal(user)
+        .setPrincipalType(aclUser)
+        .setPrincipalLen(user.length())
+        .setAllowPerms(perms)
+        .build();
     DaosAce ace2 = DaosAce.newBuilder()
-      .setAccessTypes(accessAllow)
-      .setPrincipalType(aclOwner)
-      .setAllowPerms(perms)
-      .setPrincipalLen(0)
-      .build();
+        .setAccessTypes(accessAllow)
+        .setPrincipalType(aclOwner)
+        .setAllowPerms(perms)
+        .setPrincipalLen(0)
+        .build();
     DaosAcl.Builder aclBuilder = DaosAcl.newBuilder()
-      .setVer(1);
+        .setVer(1);
     aclBuilder.addAces(ace2).addAces(ace);
     DaosAcl acl = aclBuilder.build();
     propMap.put(PropType.DAOS_PROP_CO_ACL, new DaosUns.PropValue(acl, 1));
@@ -730,14 +800,14 @@ public class DaosUns {
     int permSet = 1 << 7;
     int perms = permGet | permDel | permSet;
     DaosAce ace = DaosAce.newBuilder()
-      .setAccessTypes(accessAllow)
-      .setPrincipal(user)
-      .setPrincipalType(aclUser)
-      .setPrincipalLen(user.length())
-      .setAllowPerms(perms)
-      .build();
+        .setAccessTypes(accessAllow)
+        .setPrincipal(user)
+        .setPrincipalType(aclUser)
+        .setPrincipalLen(user.length())
+        .setAllowPerms(perms)
+        .build();
     DaosAcl.Builder aclBuilder = DaosAcl.newBuilder()
-      .setVer(1);
+        .setVer(1);
     aclBuilder.addAces(ace);
     DaosAcl acl = aclBuilder.build();
     propMap.put(PropType.DAOS_PROP_CO_LAYOUT_VER, new DaosUns.PropValue(2L, 0));
@@ -895,7 +965,7 @@ public class DaosUns {
     }
   }
 
-  private static boolean needUsage(String args[]) {
+  private static boolean needUsage(String[] args) {
     for (String arg : args) {
       if ("--help".equals(arg) || "-h".equals(arg)) {
         return true;
@@ -906,57 +976,56 @@ public class DaosUns {
 
   private static String getUsage() {
     String usage = "===================================================\n" +
-      "create/resolve/destroy/parse UNS path associated with DAOS.\n" +
-      "Usage java [-options] <-jar jarfile | -cp classpath> io.daos.dfs.DaosUns <command>\n" +
-      "see following commands and their options:\n" +
-      "command: [create|resolve|destroy|parse|setappinfo|getappinfo|util]\n" +
-      "=>create:\n" +
-      "   -Dpath=, required, OS file path. The file should not exist.\n" +
-      "   -Dpool_id=, required, DAOS pool UUID.\n" +
-      "   -Dcont_id=, optional, DAOS container UUID. New container will be created if not set.\n" +
-      "   -Dlayout=, optional, filesystem layout. Default is POSIX. [POSIX|HDF5].\n" +
-      "   -Dobject_type=, optional, file object type. Default is OC_SX. [enums from DaosObjectType]. " +
-      "use the \"util -Dop=list-object-types\" command to list all object types.\n" +
-      "   -Dchunk_size=, optional, file chunck size. Default is 0 which lets DAOS decides (1MB for now).\n" +
-      "   -Don_lustre=, optional, on lustre file system? Default is false. [true|false]\n" +
-      "   -Dranks=, optional, pool ranks. Default is 0.\n" +
-      "   -Dserver_group=, optional, DAOS server group. Default is daos_server.\n" +
-      "   -Dpool_flags=, optional, pool access flags. Default is 2. [1(readonly)|2(readwrite)|4(execute)].\n"
-      +
-      "   -Dproperties=, optional, properties. No default. " +
-      "[key(enums from PropType)=value(value type can be get from PropValue.getValueClass(type))].\n" +
-      "use the \"util -Dop=list-property-types\" command to list all property types.\n" +
-      "use the \"util -Dop=get-property-value-type\" command to get property value type of giving property " +
-      "type.\n" +
-      "use the \"util -Dop=sample-properties\" command to see examples of setting different types " +
-      "of properties.\n" +
-      "=>resolve:\n" +
-      "   -Dpath=, required, OS file path. The file should exist.\n" +
-      "=>destroy:\n" +
-      "   -Dpath=, required, OS file path. The file should exist.\n" +
-      "   -Dpool_id=, required, DAOS pool UUID.\n" +
-      "   -Dranks=, optional, pool ranks. Default is 0.\n" +
-      "   -Dserver_group=, optional, DAOS server group. Default is daos_server.\n" +
-      "   -Dpool_flags=, optional, pool access flags. Default is 2. [2(readwrite)].\n" +
-      "=>parse:\n" +
-      "   -Dinput=, required, attribute string.\n" +
-      "=>setappinfo:\n" +
-      "   -Dpath=, required, OS file path. The file should exist.\n" +
-      "   -Dattr=, required, attribute name.\n" +
-      "   -Dvalue=, optional, attribute value. The attribute will be removed if value is not specified.\n" +
-      "=>getappinfo:\n" +
-      "   -Dpath=, required, OS file path. The file should exist.\n" +
-      "   -Dattr=, required, attribute name.\n" +
-      "   -Dmaxlen=, optional, maximum length of value to be get. Default is 1024\n" +
-      "=>util\n" +
-      "   -Dop=, required, operation types. [list-object-types|list-property-types|" +
-      "get-property-value-type|sample-properties|escape-app-value]\n" +
-      "   -Dprop_type=, required when op=get-property-value-type\n" +
-      "   -Dinput=, required when op=escape-app-value\n" +
-      "===================================================\n" +
-      "examples: java -Dpath=/tmp/uns -Dpool_id=<your pool uuid> -cp ./daos-java-1.1.0-shaded.jar " +
-      "io.daos.dfs.DaosUns create\n" +
-      "===================================================";
+        "create/resolve/destroy/parse UNS path associated with DAOS.\n" +
+        "Usage java [-options] <-jar jarfile | -cp classpath> io.daos.dfs.DaosUns <command>\n" +
+        "see following commands and their options:\n" +
+        "command: [create|resolve|destroy|parse|setappinfo|getappinfo|util]\n" +
+        "=>create:\n" +
+        "   -Dpath=, required, OS file path. The file should not exist.\n" +
+        "   -Dpool_id=, required, DAOS pool UUID.\n" +
+        "   -Dcont_id=, optional, DAOS container UUID. New container will be created if not set.\n" +
+        "   -Dlayout=, optional, filesystem layout. Default is POSIX. [POSIX|HDF5].\n" +
+        "   -Dobject_type=, optional, file object type. Default is OC_SX. [enums from DaosObjectType]. " +
+        "use the \"util -Dop=list-object-types\" command to list all object types.\n" +
+        "   -Dchunk_size=, optional, file chunck size. Default is 0 which lets DAOS decides (1MB for now).\n" +
+        "   -Don_lustre=, optional, on lustre file system? Default is false. [true|false]\n" +
+        "   -Dranks=, optional, pool ranks. Default is 0.\n" +
+        "   -Dserver_group=, optional, DAOS server group. Default is daos_server.\n" +
+        "   -Dpool_flags=, optional, pool access flags. Default is 2. [1(readonly)|2(readwrite)|4(execute)].\n" +
+        "   -Dproperties=, optional, properties. No default. " +
+        "[key(enums from PropType)=value(value type can be get from PropValue.getValueClass(type))].\n" +
+        "use the \"util -Dop=list-property-types\" command to list all property types.\n" +
+        "use the \"util -Dop=get-property-value-type\" command to get property value type of giving property " +
+        "type.\n" +
+        "use the \"util -Dop=sample-properties\" command to see examples of setting different types " +
+        "of properties.\n" +
+        "=>resolve:\n" +
+        "   -Dpath=, required, OS file path. The file should exist.\n" +
+        "=>destroy:\n" +
+        "   -Dpath=, required, OS file path. The file should exist.\n" +
+        "   -Dpool_id=, required, DAOS pool UUID.\n" +
+        "   -Dranks=, optional, pool ranks. Default is 0.\n" +
+        "   -Dserver_group=, optional, DAOS server group. Default is daos_server.\n" +
+        "   -Dpool_flags=, optional, pool access flags. Default is 2. [2(readwrite)].\n" +
+        "=>parse:\n" +
+        "   -Dinput=, required, attribute string.\n" +
+        "=>setappinfo:\n" +
+        "   -Dpath=, required, OS file path. The file should exist.\n" +
+        "   -Dattr=, required, attribute name.\n" +
+        "   -Dvalue=, optional, attribute value. The attribute will be removed if value is not specified.\n" +
+        "=>getappinfo:\n" +
+        "   -Dpath=, required, OS file path. The file should exist.\n" +
+        "   -Dattr=, required, attribute name.\n" +
+        "   -Dmaxlen=, optional, maximum length of value to be get. Default is 1024\n" +
+        "=>util\n" +
+        "   -Dop=, required, operation types. [list-object-types|list-property-types|" +
+        "get-property-value-type|sample-properties|escape-app-value]\n" +
+        "   -Dprop_type=, required when op=get-property-value-type\n" +
+        "   -Dinput=, required when op=escape-app-value\n" +
+        "===================================================\n" +
+        "examples: java -Dpath=/tmp/uns -Dpool_id=<your pool uuid> -cp ./daos-java-1.1.0-shaded.jar " +
+        "io.daos.dfs.DaosUns create\n" +
+        "===================================================";
     return usage;
   }
 }

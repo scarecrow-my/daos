@@ -179,7 +179,6 @@ public enum DaosObjectType {
    * Replicated object with explicit layout.
    * The first number is number of replicas, the number after G stands
    * for number of redundancy Groups.
-   *
    * Examples:
    * 2G1 : 2 replicas group=1
    * 3G2 : 3 replicas groups=2, ...
@@ -248,7 +247,6 @@ public enum DaosObjectType {
    * - the first number is data cells number within a redundancy group
    * - the number after P is parity cells number within a redundancy group
    * - the number after G is number of redundancy Groups.
-   *
    * Examples:
    * - 2P1G1: 2+1 EC object with one redundancy group
    * - 4P2G8: 4+2 EC object with 8 redundancy groups

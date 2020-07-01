@@ -25,7 +25,12 @@ package io.daos.fs.hadoop;
 
 import java.io.InputStream;
 import java.lang.reflect.Field;
-import java.util.*;
+import java.net.URI;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Set;
 
 import javax.xml.parsers.DocumentBuilderFactory;
 
@@ -104,7 +109,7 @@ public class DaosConfigFile {
 
   private Set<String> collectFsConfigNames() {
     Set<String> fsNames = new HashSet<>();
-    Field fields[] = Constants.class.getFields();
+    Field[] fields = Constants.class.getFields();
     for (Field field : fields) {
       try {
         Object value = field.get(null);
@@ -161,7 +166,7 @@ public class DaosConfigFile {
    * 
    * @param authority
    * A valid URI authority name to denote unique pool and container. The empty value means no authority provided in URI
-   * which is default URI. see {@link #getDaosUriDesc()} for details.
+   *     which is default URI. see {@link #getDaosUriDesc()} for details.
    * @param hadoopConfig
    * configuration from Hadoop, could be manipulated by upper layer application, like Spark
    * @return verified and merged configuration
@@ -196,6 +201,17 @@ public class DaosConfigFile {
     }
   }
 
+  /**
+   * merge default configuration with hadoop configuration. And hadoop configuration has higher priority than default.
+   * 
+   * @param authority
+   * URI authority
+   * @param hadoopConfig
+   * hadoop configuration from user, typically from {@link org.apache.hadoop.fs.FileSystem#get(URI, Configuration)}
+   * @param excludeProps
+   * excluded properties from merging
+   * @return merged hadoop configuration
+   */
   public Configuration merge(String authority, Configuration hadoopConfig, Set<String> excludeProps) {
     Iterator<String> it = fsConfigNames.iterator();
     while (it.hasNext()) {
@@ -203,7 +219,7 @@ public class DaosConfigFile {
       if (excludeProps == null || !excludeProps.contains(name)) {
         if (hadoopConfig.get(name) == null) { //not set by user
           String value = StringUtils.isEmpty(authority) ? defaultConfig.get(name) :
-            defaultConfig.get(authority + name, defaultConfig.get(name));
+              defaultConfig.get(authority + name, defaultConfig.get(name));
           if (value != null) {
             hadoopConfig.set(name, value);
           }

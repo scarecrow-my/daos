@@ -16,6 +16,10 @@
   <suppress checks=".*" files=".+[\\/]generated-sources[\\/].+\.java" />
   <suppress checks=".*" files=".+[\\/]generated-test-sources[\\/].+\.java" />
 
+  <!-- suppress protobuf code -->
+  <suppress checks=".*" files=".+[\\/]dfs[\\/]uns[\\/].+\.java" />
+  <suppress checks=".*" files=".+[\\/]obj[\\/]attr[\\/].+\.java" />
+
   <!-- suppress files that include additional lines in license -->
   <suppress checks="Header" files="AutoCloseables.java|Collections2.java" />
 

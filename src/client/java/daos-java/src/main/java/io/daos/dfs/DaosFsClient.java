@@ -1034,11 +1034,12 @@ public final class DaosFsClient {
    * OS file path to set duns attributes. make sure file not existing
    * @param bufferAddress
    * buffer memory address of direct buffer which holds <code>DunsAttribute</code> data serialized by
-   * protocol buffer
+   *     protocol buffer
    * @param buffLen
    * length of buffer
    * @return UUID of container
    * @throws IOException
+   * {@link DaosIOException}
    */
   static native String dunsCreatePath(long poolHandle, String path, long bufferAddress, int buffLen) throws IOException;
 
@@ -1048,8 +1049,9 @@ public final class DaosFsClient {
    * @param path
    * OS file path
    * @return UNS attribute info in binary get from path, including object type, pool UUID and container UUID.
-   * user should deserialize the data by {@link io.daos.dfs.uns.DunsAttribute}
+   *     user should deserialize the data by {@link io.daos.dfs.uns.DunsAttribute}
    * @throws IOException
+   * {@link DaosIOException}
    */
   static native byte[] dunsResolvePath(String path) throws IOException;
 
@@ -1064,6 +1066,7 @@ public final class DaosFsClient {
    * maximum length of attribute value
    * @return application info in string, key1=value1;key2=value2...
    * @throws IOException
+   * {@link DaosIOException}
    */
   static native String dunsGetAppInfo(String path, String attrName, int maxLen) throws IOException;
 
@@ -1077,6 +1080,7 @@ public final class DaosFsClient {
    * @param value
    * application info in string, key1=value1;key2=value2...
    * @throws IOException
+   * {@link DaosIOException}
    */
   static native void dunsSetAppInfo(String path, String attrName, String value) throws IOException;
 
@@ -1088,6 +1092,7 @@ public final class DaosFsClient {
    * @param path
    * OS file path
    * @throws IOException
+   * {@link DaosIOException}
    */
   static native void dunsDestroyPath(long poolHandle, String path) throws IOException;
 
@@ -1097,8 +1102,9 @@ public final class DaosFsClient {
    * @param input
    * attribute string
    * @return UNS attribute info in binary.
-   * user should deserialize the data by {@link io.daos.dfs.uns.DunsAttribute}
+   *     user should deserialize the data by {@link io.daos.dfs.uns.DunsAttribute}
    * @throws IOException
+   * {@link DaosIOException}
    */
   static native byte[] dunsParseAttribute(String input) throws IOException;
 
@@ -1264,8 +1270,6 @@ public final class DaosFsClient {
      *                  {@link Constants#ACCESS_FLAG_POOL_READONLY}
      *                  {@link Constants#ACCESS_FLAG_POOL_READWRITE}
      *                  {@link Constants#ACCESS_FLAG_POOL_EXECUTE}
-     *
-     * <p>
      *                  Default is {@link Constants#ACCESS_FLAG_POOL_READWRITE}
      * @return DaosFsClientBuilder
      */
@@ -1282,9 +1286,7 @@ public final class DaosFsClient {
      *                               {@link Constants#ACCESS_FLAG_FILE_READONLY}
      *                               {@link Constants#ACCESS_FLAG_FILE_READWRITE}
      *                               {@link Constants#ACCESS_FLAG_FILE_EXCL}
-     *
-     * <p>
-     * default is {@link Constants#ACCESS_FLAG_FILE_READWRITE}
+     *     default is {@link Constants#ACCESS_FLAG_FILE_READWRITE}
      * @return DaosFsClientBuilder
      */
     public DaosFsClientBuilder defaultFileAccessFlags(int defaultFileAccessFlags) {
@@ -1294,7 +1296,7 @@ public final class DaosFsClient {
 
     /**
      * set default file mode. You can override this value when create new file by
-     * calling {@link DaosFile#createNewFile(int, DaosObjectType, int, boolean)}
+     * Scalling {@link DaosFile#createNewFile(int, DaosObjectType, int, boolean)}.
      *
      * @param defaultFileMode
      * should be octal value. Default is 0755
@@ -1307,7 +1309,7 @@ public final class DaosFsClient {
 
     /**
      * set default file type. You can override this value when create new file by
-     * calling {@link DaosFile#createNewFile(int, DaosObjectType, int, boolean)}
+     * calling {@link DaosFile#createNewFile(int, DaosObjectType, int, boolean)}.
      *
      * @param defaultFileObjType
      * default is {@link DaosObjectType#OC_SX}
@@ -1320,7 +1322,7 @@ public final class DaosFsClient {
 
     /**
      * set default file chunk size. You can override this value when create new file by
-     * calling {@link DaosFile#createNewFile(int, DaosObjectType, int, boolean)}
+     * calling {@link DaosFile#createNewFile(int, DaosObjectType, int, boolean)}.
      *
      * @param defaultFileChunkSize
      * default is 0. DAOS will decide what default is. 1MB for now.

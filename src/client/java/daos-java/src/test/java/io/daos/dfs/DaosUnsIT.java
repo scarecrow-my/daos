@@ -149,20 +149,20 @@ public class DaosUnsIT {
     int permSet = 1 << 7;
     int perms = permGet | permDel | permSet;
     DaosAce ace = DaosAce.newBuilder()
-      .setAccessTypes(accessAllow)
-      .setPrincipal(user)
-      .setPrincipalType(aclUser)
-      .setPrincipalLen(user.length())
-      .setAllowPerms(perms)
-      .build();
+        .setAccessTypes(accessAllow)
+        .setPrincipal(user)
+        .setPrincipalType(aclUser)
+        .setPrincipalLen(user.length())
+        .setAllowPerms(perms)
+        .build();
     DaosAce ace2 = DaosAce.newBuilder()
-      .setAccessTypes(accessAllow)
-      .setPrincipalType(aclOwner)
-      .setAllowPerms(perms)
-      .setPrincipalLen(0)
-      .build();
+        .setAccessTypes(accessAllow)
+        .setPrincipalType(aclOwner)
+        .setAllowPerms(perms)
+        .setPrincipalLen(0)
+        .build();
     DaosAcl.Builder aclBuilder = DaosAcl.newBuilder()
-      .setVer(1);
+        .setVer(1);
     if (inOrder) {
       aclBuilder.addAces(ace2).addAces(ace);
     } else {
@@ -203,13 +203,13 @@ public class DaosUnsIT {
     int permSet = 1 << 7;
     int perms = permGet | permDel | permSet;
     DaosAce ace = DaosAce.newBuilder()
-      .setAccessTypes(accessAllow)
-      .setPrincipalType(aclOwner)
-      .setAllowPerms(perms)
-      .build();
+        .setAccessTypes(accessAllow)
+        .setPrincipalType(aclOwner)
+        .setAllowPerms(perms)
+        .build();
     DaosAcl acl = DaosAcl.newBuilder()
-      .setVer(1)
-      .addAces(ace).build();
+        .setVer(1)
+        .addAces(ace).build();
     propMap.put(PropType.DAOS_PROP_CO_ACL, new DaosUns.PropValue(acl, 0));
     String cid = createPath(null, Layout.HDF5, propMap);
     Assert.assertTrue(cid.length() > 0);
@@ -281,7 +281,7 @@ public class DaosUnsIT {
     String attrFmt = "DAOS.%s://%36s/%36s";
     String type = "POSIX";
     String attr = String.format(attrFmt, type, DaosFsClientTestBase.DEFAULT_POOL_ID,
-      DaosFsClientTestBase.DEFAULT_CONT_ID);
+        DaosFsClientTestBase.DEFAULT_CONT_ID);
     DunsAttribute attribute = DaosUns.parseAttribute(attr);
     Assert.assertEquals(Layout.POSIX, attribute.getLayoutType());
     Assert.assertEquals(DaosFsClientTestBase.DEFAULT_POOL_ID, attribute.getPuuid());
@@ -289,7 +289,7 @@ public class DaosUnsIT {
 
     type = "HDF5";
     attr = String.format(attrFmt, type, DaosFsClientTestBase.DEFAULT_POOL_ID,
-      DaosFsClientTestBase.DEFAULT_CONT_ID);
+        DaosFsClientTestBase.DEFAULT_CONT_ID);
     attribute = DaosUns.parseAttribute(attr);
     Assert.assertEquals(Layout.HDF5, attribute.getLayoutType());
     Assert.assertEquals(DaosFsClientTestBase.DEFAULT_POOL_ID, attribute.getPuuid());
@@ -314,7 +314,7 @@ public class DaosUnsIT {
     try {
       DaosUns.setAppInfo(file.getAbsolutePath(), "user.attr", "abc");
       Assert.assertEquals("abc", DaosUns.getAppInfo(file.getAbsolutePath(), "user.attr",
-        10));
+          10));
     } finally {
       file.delete();
     }
@@ -343,7 +343,7 @@ public class DaosUnsIT {
     Exception ee = null;
     try {
       DaosUns.getAppInfo(file.getAbsolutePath(), "user.attr",
-        10);
+          10);
     } catch (Exception e) {
       ee = e;
     } finally {

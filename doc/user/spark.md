@@ -29,15 +29,17 @@ under distribution/target.
 After unzipping `daos-java-<version>-assemble.tgz`, you will get the
 following files.
 
-### `daos-java-<version>.jar` and `hadoop-daos-<version>.jar`<br/>
+### `daos-java-<version>.jar` and `hadoop-daos-<version>.jar`
+
 They need to be deployed on every compute node that runs Spark or Hadoop.
 Place them in a directory, e.g., $SPARK_HOME/jars for Spark and
 $HADOOP_HOME/share/hadoop/common/lib for Hadoop, which are accessible to all
 the nodes or copy them to every node.<br/>
 
-### `daos-site-example.xml`<br/>
-You have two choices, mapped pool/container UUIDs and DAOS UNS path, to
-construct DAOS URI. If you choose the first choice, you have to copy the file
+### `daos-site-example.xml`
+
+You have two choices, with or without UNS path, to
+construct DAOS URI. If you choose the second choice, you have to copy the file
 to your application config directory, e.g., $SPARK_HOME/conf for Spark and
 $HADOOP_HOME/etc/hadoop for Hadoop. Then do some proper configuration and
 rename it to daos-site.xml. For the second choice, daos-site.xml is optional.
@@ -64,16 +66,40 @@ $ export LD_PRELOAD=<YOUR JDK HOME>/jre/lib/amd64/libjsig.so
 ### DAOS URIs
 
 DAOS FileSystem binds to schema, "daos". And DAOS URIs are in the format of
-"daos://\<authority\>//\[optional path\]". There are two ways to connect to
-DAOS from Hadoop DAOS FileSystem, depending on the "\<authority\>".
+"daos://\[authority\]//\[path\]". Both authority and path are optional. There
+are two types of DAOS URIs, with and without DAOS UNS path depending on where
+you want DAOS Filesystem get initialized and configured.
 
-* Mapped DAOS pool/container UUIDs
+* With DAOS UNS Path
 
-The URI is "daos://\<mapped pool UUID\>:\<mapped container UUID\>", such as
-"daos://default:1". Please check description of "fs.defaultFS" in
+The simple form of URI is "daos:///\<your uns path\>\[/sub path\]".
+"\<your path\>" is your OS file path created with DAOS command or Java DAOS UNS
+method, DaosUns.create(). "\[sub path\]" is optional. You can create the UNS
+path with below command.
+
+```bash
+$ daos cont create --pool <pool UUID> --svc <svc list> -path <your path> --type=POSIX
+```
+Or
+
+```bash
+$ java -Dpath="your path" -Dpool_id="your pool uuid" -cp ./daos-java-1.1.0-shaded.jar io.daos.dfs.DaosUns create
+```
+
+After creation, you can use below command to see what DAOS properties set to
+the path.
+
+```path
+$ getfattr -d -m - <your path>
+```
+
+* Without DAOS UNS Path
+
+The simple form of URI is "daos:///". Please check description of
+"fs.defaultFS" in
 [example](hadoop-daos/src/main/resources/daos-site-example.xml) for how to
-construct your URI by mapping your UUIDs. In this way, all configurations are
-in daos-site.xml which should be put in right place, e.g., Java classpath, and
+configure filesystem. In this way, preferred configurations are in
+daos-site.xml which should be put in right place, e.g., Java classpath, and
 loadable by Hadoop DAOS FileSystem.
 
 If the DAOS pool and container have not been created, we can use the following
@@ -108,30 +134,12 @@ After that, configure daos-site.xml with the pool and container created.
 ...
 </configuration>
 ```
-See [link](#daossite) for details about this configuration.
 
-* DAOS UNS Path
-
-The URI is "daos://uns:\<sequence\>/\<your uns path\>\[/sub path\]".
-"\<your path\>" is your OS file path created by DAOS UNS method,
-DaosUns.create(). "\[sub path\]" is optional. "\<sequence\>" is to identify the
-unique UNS path in Hadoop. You can create the UNS path with below command.
-
-```bash
-$ daos cont create --pool <pool UUID> --svc <svc list> -path <your path> --type=POSIX
-```
-Or
-
-```bash
-$ java -Dpath="your path" -Dpool_id="your pool uuid" -cp ./daos-java-1.1.0-shaded.jar io.daos.dfs.DaosUns create
-```
-
-After creation, you can use below command to see what DAOS properties set to
-the path.
-
-```path
-$ getfattr -d -m - <your path>
-```
+You may want to connect to two DAOS servers or two DFS instances mounted to
+different containers in one DAOS server from same JVM. Then, you need to add
+authority to your URI to make it unique since Hadoop caches filesystem instance
+keyed by "schema + authority" in global (JVM). It applies to the both types of
+URIs described above.
 
 ### Tune More Configurations
 
@@ -239,45 +247,3 @@ make sure you have DAOS URI, “daos://default:1/”, set correctly in your job.
 
 If you use Omni-path PSM2 provider in DAOS, you'll get connection issue in
 Yarn container due to PSM2 resource not being released properly in time.
-
-## <a name="daossite"><a>daos-site.xml
-The default pool and container are configured by `fs.daos.pool.uuid` and
-`fs.daos.container.uuid`. The default DAOS filesystem can be accessed by URI
-`daos://default:1` in Spark and Hadoop. In HDFS, the URI is composed by a
-master host name (or IP address) and a port for example hdfs://<HostName>:8020.
-In DAOS, we don't use host name and port to connect, instead we use pool UUID
-and container UUID to specify the DFS filesystem. We do not put the UUIDs in
-URI as UUID is not a valid port number. Instead, the hostname `default` maps to
-the default pool configured by `fs.daos.pool.uuid` and the port 1 maps to the
-default container configured by `fs.daos.container.uuid`.
-
-It is also possible to configure multiple pools and containers in the
-daos-site.xml and use different URI to access them. For example, to access
-another container in the default pool using URI `daos://default:2`, we can
-configure the container UUID in `c2.fs.daos.container.uuid`. To access another
-pool and container using `daos://pool1:3`, we can configure the pool UUID in
-`pool1.fs.daos.pool.uuid` and container UUID in `c3.fs.daos.container.uuid`.
-See examples,
-
-```
-"daos://default:1" reads values of "fs.daos.pool.uuid" and "fs.daos.container.uuid"
-"daos://default:2" reads values of "fs.daos.pool.uuid" and "c2.fs.daos.container.uuid"
-"daos://pool1:3" reads values of "pool1.fs.daos.pool.uuid" and "c3.fs.daos.container.uuid"
-```
-
-Different URIs represent different DAOS filesystem and they can also be
-configured with different settings like the read buffer size, etc. For example,
-to configure the filesystem represented by `daos://default:2`, we use property
-name prefixed with c2, i.e., `*c2.fs.daos.*`. To configure the filesystem
-represented by `daos://pool1:3`, we use property name prefixed with pool1c3,
-i.e., `*pool1c3.fs.daos.*`. If no specific configurations are set, they fall
-back to the configuration set for the default pool and container started with
-`*fs.daos*.`.
-
-One tricky example is to access same DAOS filesystem with two Hadoop FileSystem
-instances. One instance is configured with preload enabled in the daos-site.xml.
-The other instance is preload disabled. With above design, you can use two
-different URIs, `daos://default:1` and `daos://default:2`. In the daos-site.xml,
-you can set `fs.daos.container.uuid` and `c2.fs.daos.container.uuid` to same the
-container UUID. Then set `fs.daos.preload.size` to a value greater than 0 and
-`c2.fs.daos.preload.size` to 0.

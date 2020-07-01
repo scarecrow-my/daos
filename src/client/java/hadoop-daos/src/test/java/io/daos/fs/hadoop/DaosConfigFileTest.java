@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -38,10 +38,10 @@ public class DaosConfigFileTest {
       return;
     }
     File file = new File(url.getFile());
-    File backFile = new File(file.getAbsolutePath()+".back");
+    File backFile = new File(file.getAbsolutePath() + ".back");
     try {
       if (!file.renameTo(backFile)) {
-        throw new Exception("failed to rename daos file to "+backFile.getAbsolutePath());
+        throw new Exception("failed to rename daos file to " + backFile.getAbsolutePath());
       }
       Constructor<DaosConfigFile> constructor = DaosConfigFile.class.getDeclaredConstructor();
       constructor.setAccessible(true);
@@ -93,7 +93,7 @@ public class DaosConfigFileTest {
     DaosConfigFile config = DaosConfigFile.getInstance();
     try {
       config.parseConfig("", hadoopConfig);
-    }catch (Exception e) {
+    } catch (Exception e) {
       Assert.assertTrue(e.getMessage().contains("hadoop pid"));
       Assert.assertTrue(e.getMessage().contains(config.getDaosUriDesc()));
     }
@@ -116,7 +116,7 @@ public class DaosConfigFileTest {
   }
 
   private void parseConfigWithDifferentDaosFile(String newDaosFile, Consumer<Constructor<DaosConfigFile>> function)
-          throws Exception {
+      throws Exception {
     URL url = DaosConfigFileTest.class.getResource("/daos-site.xml");
     if (url == null) {
       throw new Exception("cannot load daos-site.xml");
@@ -126,16 +126,16 @@ public class DaosConfigFileTest {
       throw new Exception("cannot load " + newDaosFile);
     }
     File file = new File(url.getFile());
-    File backFile = new File(file.getAbsolutePath()+".back");
+    File backFile = new File(file.getAbsolutePath() + ".back");
 
     File file2 = new File(url2.getFile());
     try {
       if (!file.renameTo(backFile)) {
-        throw new Exception("failed to rename daos file to "+backFile.getAbsolutePath());
+        throw new Exception("failed to rename daos file to " + backFile.getAbsolutePath());
       }
 
       if (!file2.renameTo(file)) {
-        throw new Exception("failed to rename test file to "+file.getAbsolutePath());
+        throw new Exception("failed to rename test file to " + file.getAbsolutePath());
       }
 
       Constructor<DaosConfigFile> constructor = DaosConfigFile.class.getDeclaredConstructor();

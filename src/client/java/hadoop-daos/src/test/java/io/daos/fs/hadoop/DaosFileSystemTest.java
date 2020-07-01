@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -85,7 +85,7 @@ public class DaosFileSystemTest {
     DunsInfo info = new DunsInfo("123", "56", "POSIX", Constants.DAOS_POOL_SVC + "=0");
     PowerMockito.mockStatic(DaosUns.class);
     when(DaosUns.getAccessInfo(anyString(), eq(Constants.UNS_ATTR_NAME_HADOOP),
-            eq(io.daos.dfs.Constants.UNS_ATTR_VALUE_MAX_LEN_DEFAULT), eq(false))).thenReturn(info);
+        eq(io.daos.dfs.Constants.UNS_ATTR_VALUE_MAX_LEN_DEFAULT), eq(false))).thenReturn(info);
     URI uri = URI.create("daos://" + unsId.getAndIncrement() + path);
     FileSystem unsFs = FileSystem.get(uri, cfg);
     unsFs.close();
@@ -124,10 +124,10 @@ public class DaosFileSystemTest {
     sb.append(Constants.DAOS_POOL_FLAGS).append("=").append("4").append(":");
     sb.append(Constants.DAOS_READ_BUFFER_SIZE).append("=").append("4194304").append(":");
     DunsInfo info = new DunsInfo("123", "56", "POSIX",
-            sb.toString());
+        sb.toString());
     PowerMockito.mockStatic(DaosUns.class);
     when(DaosUns.getAccessInfo(anyString(), eq(Constants.UNS_ATTR_NAME_HADOOP),
-      eq(io.daos.dfs.Constants.UNS_ATTR_VALUE_MAX_LEN_DEFAULT), eq(false))).thenReturn(info);
+        eq(io.daos.dfs.Constants.UNS_ATTR_VALUE_MAX_LEN_DEFAULT), eq(false))).thenReturn(info);
     URI uri = URI.create("daos://" + unsId.getAndIncrement() + path);
     FileSystem unsFs = FileSystem.get(uri, cfg);
     unsFs.close();
@@ -157,10 +157,10 @@ public class DaosFileSystemTest {
     cfg.set(Constants.DAOS_CONTAINER_UUID, "123");
     cfg.set(Constants.DAOS_POOL_SVC, "0");
     fs.initialize(URI.create("daos://1234:56/"), cfg);
-    Assert.assertEquals("daos://1234:56/user/"+System.getProperty("user.name"),
-      fs.getWorkingDirectory().toString());
+    Assert.assertEquals("daos://1234:56/user/" + System.getProperty("user.name"),
+        fs.getWorkingDirectory().toString());
     verify(client, times(1))
-        .mkdir("/user/"+System.getProperty("user.name"), true);
+        .mkdir("/user/" + System.getProperty("user.name"), true);
     fs.close();
   }
 
@@ -239,7 +239,7 @@ public class DaosFileSystemTest {
       URI uri = URI.create("daos://1234:56/");
       fs.initialize(uri, cfg);
       Assert.assertEquals(new Path("/user", System.getProperty("user.name")).makeQualified(uri, null),
-              fs.getWorkingDirectory());
+          fs.getWorkingDirectory());
     } finally {
       fs.close();
     }

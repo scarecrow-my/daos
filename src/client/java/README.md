@@ -1,8 +1,10 @@
 ## Description
+
 This module is DAOS Java client and DAOS DFS implementation of Hadoop FileSystem. There are two submodules,
 daos-java and hadoop-daos.
 
 ### daos-java
+
 It wraps most of common APIs from daos_fs.h and daos_uns.h, as well as some pool and container connection related APIs
 from daos_pool.h and daos_cont.h. There are three main classes, DaosFsClient, DaosFile and DaosUns.
 
@@ -36,6 +38,7 @@ $ java -cp ./daos-java-1.1.0-shaded.jar io.daos.dfs.DaosUns --help
 ```
 
 ### hadoop-daos
+
 It's DAOS FS implementation of Hadoop FileSystem based on daos-java. There are three main classes, DaosFileSystem,
 DaosInputStream and DaosOutputStream.
 
@@ -47,21 +50,16 @@ DaosInputStream and DaosOutputStream.
 #### Hadoop DAOS FileSystem Configuration
 
 ##### DAOS URIs
-DAOS FileSystem binds to schema, "daos". And DAOS URIs are in the format of "daos://\<authority\>//\[optional path\]".
-There are two ways to connect to DAOS from Hadoop DAOS FileSystem, depending on the "\<authority\>".
 
-* Mapped DAOS pool/container UUIDs
+DAOS FileSystem binds to schema, "daos". And DAOS URIs are in the format of "daos://\[authority\]//\[path\]".
+Both authority and path are optional. There are two types of DAOS URIs, with and without DAOS UNS path depending on
+where you want DAOS Filesystem get initialized and configured.
 
-The URI is "daos://<mapped pool UUID>:<mapped container UUID>", such as "daos://default:1". Please check description of
-"fs.defaultFS" in [example](hadoop-daos/src/main/resources/daos-site-example.xml) for how to construct your URI by
-mapping your UUIDs. In this way, all configurations are in daos-site.xml which should be put in right place, e.g.,
-Java classpath, and loadable by Hadoop DAOS FileSystem.
+* With DAOS UNS Path
 
-* DAOS UNS Path
-
-The URI is "daos://uns:\<sequence\>/\<your uns path\>\[/sub path\]". "\<your path\>" is your OS file path created
-by DAOS UNS method, DaosUns.create(). "\[sub path\]" is optional. "\<sequence\>" is to identify the unique UNS path in
-Hadoop. You can create the UNS path with below command.
+The simple form of URI is "daos:///\<your uns path\>\[/sub path\]". "\<your path\>" is your OS file path created
+with DAOS command or Java DAOS UNS method, DaosUns.create(). "\[sub path\]" is optional. You can create the UNS path
+with below command.
 
 ```bash
 $ daos cont create --pool <pool UUID> --svc <svc list> -path <your path> --type=POSIX
@@ -78,14 +76,25 @@ After creation, you can use below command to see what DAOS properties set to the
 $ getfattr -d -m - <your path>
 ```
 
+* Without DAOS UNS Path
+
+The simple form of URI is "daos:///". Please check description of "fs.defaultFS" in
+[example](hadoop-daos/src/main/resources/daos-site-example.xml) for how to configure filesystem.
+In this way, preferred configurations are in daos-site.xml which should be put in right place, e.g., Java classpath, and
+loadable by Hadoop DAOS FileSystem.
+
+You may want to connect to two DAOS servers or two DFS instances mounted to different containers in one DAOS server from
+same JVM. Then, you need to add authority to your URI to make it unique since Hadoop caches filesystem instance keyed by
+"schema + authority" in global (JVM). It applies to the both types of URIs described above.
+
 ##### Tune More Configurations
 
-If your DAOS URI is the mapped UUIDs, you can follow descriptions of each config item in
+If your DAOS URI has no UNS path, you can follow descriptions of each config item in
 [example](hadoop-daos/src/main/resources/daos-site-example.xml) to set your own values in loadable daos-site.xml.
 
-If your DAOS URI is the UNS path, your configurations, except those set by DAOS UNS creation, in daos-site.xml can still
-be effective. To make configuration source consistent, an alternative to configuration file, daos-site.xml, is to set
-all configurations to the UNS path. You put the configs to the same UNS path with below command.
+If your DAOS URI is with UNS path, your configurations, except those set by DAOS UNS creation, in daos-site.xml can
+still be effective. To make configuration source consistent, an alternative to configuration file, daos-site.xml, is to
+set all configurations to the UNS path. You put the configs to the same UNS path with below command.
 
 ```bash
 # install attr package if get "command not found" error
@@ -112,6 +121,7 @@ If you configure the same property in both daos-site.mxl and UNS path, the value
 user set Hadoop configuration before initializing Hadoop DAOS FileSystem, the user's configuration takes priority.
 
 ## Build
+
 They are Java modules and built by Maven. Java 1.8 and Maven 3 are required to build these modules. After they are
 installed, you can change to this \<DAOS_INSTALL\>/src/client/java folder and build by below command line.
 

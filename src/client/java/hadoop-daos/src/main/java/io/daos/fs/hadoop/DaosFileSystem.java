@@ -26,12 +26,15 @@ package io.daos.fs.hadoop;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.lang.reflect.Field;
 import java.net.URI;
-import java.util.*;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 import com.google.common.collect.Lists;
+
 import io.daos.dfs.*;
+
 import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.conf.Configuration;
@@ -208,6 +211,7 @@ public class DaosFileSystem extends FileSystem {
    * @param unsInfo
    * information get from UNS path
    * @throws IOException
+   * {@link DaosIOException}
    */
   private void initializeFromUns(URI name, Configuration conf, DunsInfo unsInfo) throws IOException {
     String path = name.getPath();
@@ -231,6 +235,7 @@ public class DaosFileSystem extends FileSystem {
    * path of URI
    * @return DunsInfo
    * @throws IOException
+   * {@link DaosIOException}
    */
   private DunsInfo searchUnsPath(String path) throws IOException {
     if ("/".equals(path) || !path.startsWith("/")) {
@@ -333,6 +338,7 @@ public class DaosFileSystem extends FileSystem {
    * @param conf
    * hadoop configuration
    * @throws IOException
+   * {@link DaosIOException}
    */
   private void initializeFromConfigFile(URI name, Configuration conf) throws IOException {
     conf = DaosConfigFile.getInstance().parseConfig(name.getAuthority(), conf);
@@ -417,7 +423,7 @@ public class DaosFileSystem extends FileSystem {
       if (!StringUtils.isBlank(poolFlags)) {
         builder.poolFlags(Integer.valueOf(poolFlags));
       }
-      if(!StringUtils.isBlank(svc)) {
+      if (!StringUtils.isBlank(svc)) {
         builder.ranks(svc);
       }
       this.daos = builder.build();
@@ -487,10 +493,9 @@ public class DaosFileSystem extends FileSystem {
    * @param p
    * path to resolve
    * @return path with schema and authority
-   * @throws IOException
    */
   @Override
-  public Path resolvePath(final Path p) throws IOException {
+  public Path resolvePath(final Path p) {
     if (!uns) {
       return p.makeQualified(getUri(), this.getWorkingDirectory());
     }
@@ -606,10 +611,9 @@ public class DaosFileSystem extends FileSystem {
    * @param src path to be renamed
    * @param dst new path after rename
    * @return
-   * @throws IOException on IO failure
    */
   @Override
-  public boolean rename(Path src, Path dst) throws IOException {
+  public boolean rename(Path src, Path dst) {
     if (LOG.isDebugEnabled()) {
       LOG.debug("DaosFileSystem: rename old path {} to new path {}", src.toUri().getPath(), dst.toUri().getPath());
     }
@@ -638,9 +642,10 @@ public class DaosFileSystem extends FileSystem {
    * the description of the operation.
    * This operation throws an exception on any failure  which needs to be
    * reported and downgraded to a failure.
+   *
    * @param srcDaosFile path to be renamed
    * @param dstDaosFile new path after rename
-   * @return
+   * @return true for successful renaming. false otherwise
    * @throws IOException on IO failure
    */
 
@@ -710,7 +715,7 @@ public class DaosFileSystem extends FileSystem {
    *
    * @param srcDaosFile path to be renamed
    * @param dst new path after rename
-   * @throws IOException
+   * @throws IOException hadoop compatible exception
    */
   private void innerMove(DaosFile srcDaosFile, Path  dst) throws IOException {
     try {
@@ -731,7 +736,7 @@ public class DaosFileSystem extends FileSystem {
     }
     DaosFile file = daos.getFile(f.toUri().getPath());
 
-    FileStatus[] statuses = null;
+    FileStatus[] statuses;
 
     // indicating root directory "/".
     if (f.toUri().getPath().equals("/")) {
@@ -862,8 +867,9 @@ public class DaosFileSystem extends FileSystem {
    * get DAOS file status with detailed info, like modification time, access time, names.
    *
    * @param f
+   * file path
    * @return file status with times and username and groupname
-   * @throws IOException
+   * @throws IOException hadoop compatible exception
    */
   @Override
   public FileStatus getFileStatus(Path f) throws IOException {

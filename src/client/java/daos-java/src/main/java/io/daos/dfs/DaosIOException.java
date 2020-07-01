@@ -82,6 +82,7 @@ public class DaosIOException extends IOException {
 
   /**
    * Constructor with msg, errorCode and daosMsg.
+   *
    * @param msg
    * error message
    * @param errorCode
@@ -97,6 +98,7 @@ public class DaosIOException extends IOException {
 
   /**
    * Constructor with msg, errorCode and cause.
+   *
    * @param msg
    * error message
    * @param errorCode
@@ -111,7 +113,8 @@ public class DaosIOException extends IOException {
 
   /**
    * get error code.
-   * @return
+   *
+   * @return error code
    */
   public int getErrorCode() {
     return errorCode;
@@ -119,7 +122,8 @@ public class DaosIOException extends IOException {
 
   /**
    * get message.
-   * @return
+   *
+   * @return message string
    */
   @Override
   public String getMessage() {
@@ -128,7 +132,8 @@ public class DaosIOException extends IOException {
 
   /**
    * get localized message.
-   * @return
+   *
+   * @return localized string
    */
   @Override
   public String getLocalizedMessage() {
@@ -137,6 +142,7 @@ public class DaosIOException extends IOException {
 
   /**
    * exception in string.
+   *
    * @return string
    */
   @Override

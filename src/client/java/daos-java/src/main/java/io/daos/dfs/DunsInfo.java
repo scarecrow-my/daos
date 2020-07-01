@@ -33,6 +33,18 @@ public class DunsInfo {
   private String layout;
   private String appInfo;
 
+  /**
+   * constructor with pool UUID, container UUID, layout and more application specific info.
+   *
+   * @param poolId
+   * pool UUID
+   * @param contId
+   * container UUID
+   * @param layout
+   * layout
+   * @param appInfo
+   * application specific info.
+   */
   public DunsInfo(String poolId, String contId, String layout, String appInfo) {
     this.poolId = poolId;
     this.contId = contId;

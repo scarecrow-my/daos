@@ -6,9 +6,9 @@
  * to you under the Apache License, Version 2.0 (the
  * "License"); you may not use this file except in compliance
  * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -76,7 +76,7 @@ public class DaosFileSystemIT {
     Assert.assertTrue(fileSystem instanceof DaosFileSystem);
   }
 
-  private void initializationTest(String initializationUri, String expectedUri) throws Exception{
+  private void initializationTest(String initializationUri, String expectedUri) throws Exception {
     fs.initialize(URI.create(initializationUri), DaosHadoopTestUtils.getConfiguration());
     Assert.assertEquals(URI.create(expectedUri), fs.getUri());
   }
@@ -87,10 +87,10 @@ public class DaosFileSystemIT {
     try {
       String path = file.getAbsolutePath();
       String daosAttr = String.format(io.daos.dfs.Constants.DUNS_XATTR_FMT, Layout.POSIX.name(),
-                    DaosFSFactory.getPoolUuid(), DaosFSFactory.getContUuid());
+          DaosFSFactory.getPoolUuid(), DaosFSFactory.getContUuid());
       DaosUns.setAppInfo(path, io.daos.dfs.Constants.DUNS_XATTR_NAME, daosAttr);
       DaosUns.setAppInfo(path, Constants.UNS_ATTR_NAME_HADOOP,
-              Constants.DAOS_POOL_FLAGS + "=2:");
+          Constants.DAOS_POOL_FLAGS + "=2:");
 
       URI uri = URI.create("daos://" + unsId.getAndIncrement() + path);
       FileSystem fs = FileSystem.get(uri, new Configuration());
@@ -99,13 +99,13 @@ public class DaosFileSystemIT {
       URI uri2 = URI.create("daos://" + unsId.getAndIncrement() + path);
       FileSystem fs2 = FileSystem.get(uri2, new Configuration());
       Assert.assertNotEquals(fs, fs2);
-      Assert.assertEquals(path, ((DaosFileSystem)fs2).getUnsPrefix());
+      Assert.assertEquals(path, ((DaosFileSystem) fs2).getUnsPrefix());
       fs2.close();
       // verify UNS path without authority
       URI uri3 = URI.create("daos:///" + path);
       FileSystem fs3 = FileSystem.get(uri3, new Configuration(false));
       Assert.assertNotEquals(fs, fs3);
-      Assert.assertEquals(path, ((DaosFileSystem)fs3).getUnsPrefix());
+      Assert.assertEquals(path, ((DaosFileSystem) fs3).getUnsPrefix());
       Assert.assertEquals("8388608", fs3.getConf().get(Constants.DAOS_READ_BUFFER_SIZE));
       fs3.close();
     } finally {
@@ -119,17 +119,17 @@ public class DaosFileSystemIT {
     try {
       String path = file.getAbsolutePath();
       String daosAttr = String.format(io.daos.dfs.Constants.DUNS_XATTR_FMT, Layout.POSIX.name(),
-        DaosFSFactory.getPoolUuid(), DaosFSFactory.getContUuid());
+          DaosFSFactory.getPoolUuid(), DaosFSFactory.getContUuid());
       DaosUns.setAppInfo(path, io.daos.dfs.Constants.DUNS_XATTR_NAME, daosAttr);
       String originPath = path;
       path += "/abc";
       String uriStr = "daos://" + unsId.getAndIncrement() +
-              path;
+          path;
       URI uri = URI.create(uriStr);
       FileSystem fs = FileSystem.get(uri, new Configuration());
       Assert.assertNotNull(fs);
-      Assert.assertTrue(((DaosFileSystem)fs).isUns());
-      Assert.assertEquals(originPath, ((DaosFileSystem)fs).getUnsPrefix());
+      Assert.assertTrue(((DaosFileSystem) fs).isUns());
+      Assert.assertEquals(originPath, ((DaosFileSystem) fs).getUnsPrefix());
       // test create path with UNS prefix
       Path filePath = new Path(path, "123");
       String content = "qazwsxymv456";
@@ -169,17 +169,17 @@ public class DaosFileSystemIT {
     try {
       String path = file.getAbsolutePath();
       String daosAttr = String.format(io.daos.dfs.Constants.DUNS_XATTR_FMT, Layout.POSIX.name(),
-        DaosFSFactory.getPoolUuid(), DaosFSFactory.getContUuid());
+          DaosFSFactory.getPoolUuid(), DaosFSFactory.getContUuid());
       DaosUns.setAppInfo(path, io.daos.dfs.Constants.DUNS_XATTR_NAME, daosAttr);
       String originPath = path;
       path += "/abc/def";
       String uriStr = "daos://" + ":" + unsId.getAndIncrement() +
-        path;
+          path;
       Path uriPath = new Path(uriStr);
       FileSystem fs = uriPath.getFileSystem(new Configuration());
       Assert.assertNotNull(fs);
-      Assert.assertTrue(((DaosFileSystem)fs).isUns());
-      Assert.assertEquals(originPath, ((DaosFileSystem)fs).getUnsPrefix());
+      Assert.assertTrue(((DaosFileSystem) fs).isUns());
+      Assert.assertEquals(originPath, ((DaosFileSystem) fs).getUnsPrefix());
       // relative path
       Path filePath = new Path("xyz");
       String content = "qazwsxymv456";
@@ -202,17 +202,17 @@ public class DaosFileSystemIT {
     try {
       String path = file.getAbsolutePath();
       String daosAttr = String.format(io.daos.dfs.Constants.DUNS_XATTR_FMT, Layout.POSIX.name(),
-        DaosFSFactory.getPoolUuid(), DaosFSFactory.getContUuid());
+          DaosFSFactory.getPoolUuid(), DaosFSFactory.getContUuid());
       DaosUns.setAppInfo(path, io.daos.dfs.Constants.DUNS_XATTR_NAME, daosAttr);
       String originPath = path;
       path += "/hij/klm";
       String uriStr = "daos://" + ":" + unsId.getAndIncrement() +
-        path;
+          path;
       Path uriPath = new Path(uriStr);
       FileSystem fs = uriPath.getFileSystem(new Configuration());
       Assert.assertNotNull(fs);
-      Assert.assertTrue(((DaosFileSystem)fs).isUns());
-      Assert.assertEquals(originPath, ((DaosFileSystem)fs).getUnsPrefix());
+      Assert.assertTrue(((DaosFileSystem) fs).isUns());
+      Assert.assertEquals(originPath, ((DaosFileSystem) fs).getUnsPrefix());
       fs.mkdirs(uriPath);
       for (int i = 0; i < 3; i++) {
         fs.mkdirs(new Path(uriStr, i + ""));
@@ -233,17 +233,17 @@ public class DaosFileSystemIT {
     try {
       String path = file.getAbsolutePath();
       String daosAttr = String.format(io.daos.dfs.Constants.DUNS_XATTR_FMT, Layout.POSIX.name(),
-        DaosFSFactory.getPoolUuid(), DaosFSFactory.getContUuid());
+          DaosFSFactory.getPoolUuid(), DaosFSFactory.getContUuid());
       DaosUns.setAppInfo(path, io.daos.dfs.Constants.DUNS_XATTR_NAME, daosAttr);
       String originPath = path;
       path += "";
       String uriStr = "daos://" + ":" + unsId.getAndIncrement() +
-        path;
+          path;
       Path uriPath = new Path(uriStr);
       FileSystem fs = uriPath.getFileSystem(new Configuration());
       Assert.assertNotNull(fs);
-      Assert.assertTrue(((DaosFileSystem)fs).isUns());
-      Assert.assertEquals(originPath, ((DaosFileSystem)fs).getUnsPrefix());
+      Assert.assertTrue(((DaosFileSystem) fs).isUns());
+      Assert.assertEquals(originPath, ((DaosFileSystem) fs).getUnsPrefix());
 
       FileStatus children[] = fs.listStatus(uriPath);
       Assert.assertTrue(children.length > 0);
