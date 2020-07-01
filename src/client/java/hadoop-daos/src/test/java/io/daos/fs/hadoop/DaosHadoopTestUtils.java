@@ -42,7 +42,7 @@ public class DaosHadoopTestUtils {
   }
 
   public static Configuration getConfiguration(){
-    return configuration!=null ? configuration:null;
+    return configuration != null ? configuration : null;
   }
 
   private static URI getURI(Configuration conf) {

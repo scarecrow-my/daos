@@ -45,13 +45,12 @@ public class DaosAbsFsImpl extends DelegateToFileSystem {
   }
 
   /**
-   * get DAOS FS default port which is {@link Constants#DAOS_CONFIG_CONTAINER_KEY_DEFAULT}.
    * see resources/daos-site-example.xml for port usage in DAOS FS.
    * @return default port
    */
   @Override
   public int getUriDefaultPort() {
-    return Integer.valueOf(Constants.DAOS_CONFIG_CONTAINER_KEY_DEFAULT);
+    return 1;
   }
 
   @Override

@@ -53,7 +53,8 @@ public class DaosFileSystemIT {
 
   //every time test one
   @Test
-  public void testInitialization() throws Exception{
+  public void testInitialization() throws Exception {
+    initializationTest("daos:///", "daos:///");
     initializationTest("daos://192.168.2.1:2345/", "daos://192.168.2.1:2345");
     initializationTest("daos://192.168.2.1:2345/abc", "daos://192.168.2.1:2345");
     initializationTest("daos://192.168.2.1:2345/ae/", "daos://192.168.2.1:2345");
@@ -91,13 +92,22 @@ public class DaosFileSystemIT {
       DaosUns.setAppInfo(path, Constants.UNS_ATTR_NAME_HADOOP,
               Constants.DAOS_POOL_FLAGS + "=2:");
 
-      URI uri = URI.create("daos://" + Constants.DAOS_AUTHORITY_UNS + ":" + unsId.getAndIncrement() + path);
+      URI uri = URI.create("daos://" + unsId.getAndIncrement() + path);
       FileSystem fs = FileSystem.get(uri, new Configuration());
       Assert.assertNotNull(fs);
-      URI uri2 = URI.create("daos://" + Constants.DAOS_AUTHORITY_UNS + ":" + unsId.getAndIncrement() + path);
+      fs.close();
+      URI uri2 = URI.create("daos://" + unsId.getAndIncrement() + path);
       FileSystem fs2 = FileSystem.get(uri2, new Configuration());
       Assert.assertNotEquals(fs, fs2);
       Assert.assertEquals(path, ((DaosFileSystem)fs2).getUnsPrefix());
+      fs2.close();
+      // verify UNS path without authority
+      URI uri3 = URI.create("daos:///" + path);
+      FileSystem fs3 = FileSystem.get(uri3, new Configuration(false));
+      Assert.assertNotEquals(fs, fs3);
+      Assert.assertEquals(path, ((DaosFileSystem)fs3).getUnsPrefix());
+      Assert.assertEquals("8388608", fs3.getConf().get(Constants.DAOS_READ_BUFFER_SIZE));
+      fs3.close();
     } finally {
       file.delete();
     }
@@ -113,7 +123,7 @@ public class DaosFileSystemIT {
       DaosUns.setAppInfo(path, io.daos.dfs.Constants.DUNS_XATTR_NAME, daosAttr);
       String originPath = path;
       path += "/abc";
-      String uriStr = "daos://" + Constants.DAOS_AUTHORITY_UNS + ":" + unsId.getAndIncrement() +
+      String uriStr = "daos://" + unsId.getAndIncrement() +
               path;
       URI uri = URI.create(uriStr);
       FileSystem fs = FileSystem.get(uri, new Configuration());
@@ -163,7 +173,7 @@ public class DaosFileSystemIT {
       DaosUns.setAppInfo(path, io.daos.dfs.Constants.DUNS_XATTR_NAME, daosAttr);
       String originPath = path;
       path += "/abc/def";
-      String uriStr = "daos://" + Constants.DAOS_AUTHORITY_UNS + ":" + unsId.getAndIncrement() +
+      String uriStr = "daos://" + ":" + unsId.getAndIncrement() +
         path;
       Path uriPath = new Path(uriStr);
       FileSystem fs = uriPath.getFileSystem(new Configuration());
@@ -196,7 +206,7 @@ public class DaosFileSystemIT {
       DaosUns.setAppInfo(path, io.daos.dfs.Constants.DUNS_XATTR_NAME, daosAttr);
       String originPath = path;
       path += "/hij/klm";
-      String uriStr = "daos://" + Constants.DAOS_AUTHORITY_UNS + ":" + unsId.getAndIncrement() +
+      String uriStr = "daos://" + ":" + unsId.getAndIncrement() +
         path;
       Path uriPath = new Path(uriStr);
       FileSystem fs = uriPath.getFileSystem(new Configuration());
@@ -227,7 +237,7 @@ public class DaosFileSystemIT {
       DaosUns.setAppInfo(path, io.daos.dfs.Constants.DUNS_XATTR_NAME, daosAttr);
       String originPath = path;
       path += "";
-      String uriStr = "daos://" + Constants.DAOS_AUTHORITY_UNS + ":" + unsId.getAndIncrement() +
+      String uriStr = "daos://" + ":" + unsId.getAndIncrement() +
         path;
       Path uriPath = new Path(uriStr);
       FileSystem fs = uriPath.getFileSystem(new Configuration());

@@ -21,6 +21,8 @@ package io.daos.fs.hadoop;
 import java.io.File;
 import java.lang.reflect.Constructor;
 import java.net.URL;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.function.Consumer;
 
 import org.apache.hadoop.conf.Configuration;
@@ -54,11 +56,17 @@ public class DaosConfigFileTest {
   }
 
   @Test
+  public void testFsConfigNamesSize() throws Exception {
+    DaosConfigFile cf = DaosConfigFile.getInstance();
+    Assert.assertEquals(10, cf.getFsConfigNames().size());
+  }
+
+  @Test
   public void testGetUriDesc() throws Exception {
     DaosConfigFile config = DaosConfigFile.getInstance();
     String desc = config.getDaosUriDesc().trim();
     Assert.assertTrue(desc.startsWith("Unique DAOS server"));
-    Assert.assertTrue(desc.endsWith("back to defaults."));
+    Assert.assertTrue(desc.endsWith("Hadoop Configuration even URI has authority."));
     Assert.assertFalse(desc.contains("</description>"));
     Assert.assertTrue(desc.length() > 700);
   }
@@ -70,7 +78,7 @@ public class DaosConfigFileTest {
     Assert.assertNull(hadoopConfig.get(Constants.DAOS_POOL_UUID));
     Assert.assertNull(hadoopConfig.get(Constants.DAOS_CONTAINER_UUID));
     DaosConfigFile config = DaosConfigFile.getInstance();
-    hadoopConfig = config.parseConfig("default", "1", hadoopConfig);
+    hadoopConfig = config.parseConfig(null, hadoopConfig);
     Assert.assertEquals("uuid of pool", hadoopConfig.get(Constants.DAOS_POOL_UUID));
     Assert.assertEquals("uuid of container", hadoopConfig.get(Constants.DAOS_CONTAINER_UUID));
   }
@@ -84,7 +92,7 @@ public class DaosConfigFileTest {
 
     DaosConfigFile config = DaosConfigFile.getInstance();
     try {
-      config.parseConfig("default", "1", hadoopConfig);
+      config.parseConfig("", hadoopConfig);
     }catch (Exception e) {
       Assert.assertTrue(e.getMessage().contains("hadoop pid"));
       Assert.assertTrue(e.getMessage().contains(config.getDaosUriDesc()));
@@ -100,7 +108,7 @@ public class DaosConfigFileTest {
     hadoopConfig.set(Constants.DAOS_CHUNK_SIZE, "45678");
 
     DaosConfigFile config = DaosConfigFile.getInstance();
-    hadoopConfig = config.parseConfig("pkey", "3", hadoopConfig);
+    hadoopConfig = config.parseConfig("pkeyc3", hadoopConfig);
     Assert.assertEquals("hadoop pid", hadoopConfig.get(Constants.DAOS_POOL_UUID));
     Assert.assertEquals("hadoop cid", hadoopConfig.get(Constants.DAOS_CONTAINER_UUID));
     Assert.assertEquals("9876", hadoopConfig.get(Constants.DAOS_PRELOAD_SIZE));
@@ -149,7 +157,7 @@ public class DaosConfigFileTest {
       Assert.assertNotNull(config.getFromDaosFile(Constants.DAOS_DEFAULT_FS));
 
       Configuration hadoopConfig = new Configuration(false);
-      hadoopConfig = config.parseConfig("default", "2", hadoopConfig);
+      hadoopConfig = config.parseConfig("c2", hadoopConfig);
       Assert.assertEquals("uuid of pool", hadoopConfig.get(Constants.DAOS_POOL_UUID));
       Assert.assertEquals("c1 uuid", hadoopConfig.get(Constants.DAOS_CONTAINER_UUID));
       Assert.assertEquals("234567", hadoopConfig.get(Constants.DAOS_READ_BUFFER_SIZE));
@@ -165,7 +173,7 @@ public class DaosConfigFileTest {
       hadoopConfig2.set(Constants.DAOS_READ_BUFFER_SIZE, "765432");
       hadoopConfig2.set(Constants.DAOS_CONTAINER_UUID, "hc1 uuid");
       hadoopConfig2.set(Constants.DAOS_PRELOAD_SIZE, "24567");
-      hadoopConfig2 = config2.parseConfig("default", "2", hadoopConfig2);
+      hadoopConfig2 = config2.parseConfig("c2", hadoopConfig2);
       Assert.assertEquals("uuid of pool", hadoopConfig2.get(Constants.DAOS_POOL_UUID));
       Assert.assertEquals("hc1 uuid", hadoopConfig2.get(Constants.DAOS_CONTAINER_UUID));
       Assert.assertEquals("765432", hadoopConfig2.get(Constants.DAOS_READ_BUFFER_SIZE));
@@ -189,7 +197,7 @@ public class DaosConfigFileTest {
       Assert.assertNotNull(config.getFromDaosFile(Constants.DAOS_DEFAULT_FS));
 
       Configuration hadoopConfig = new Configuration(false);
-      hadoopConfig = config.parseConfig("pool2", "1", hadoopConfig);
+      hadoopConfig = config.parseConfig("pool2", hadoopConfig);
       Assert.assertEquals("pool1 uuid", hadoopConfig.get(Constants.DAOS_POOL_UUID));
       Assert.assertEquals("uuid of container", hadoopConfig.get(Constants.DAOS_CONTAINER_UUID));
       Assert.assertEquals("234567", hadoopConfig.get(Constants.DAOS_READ_BUFFER_SIZE));
@@ -204,7 +212,7 @@ public class DaosConfigFileTest {
       Configuration hadoopConfig2 = new Configuration(false);
       hadoopConfig2.set(Constants.DAOS_READ_BUFFER_SIZE, "765432");
       hadoopConfig2.set(Constants.DAOS_POOL_UUID, "hp1 uuid");
-      hadoopConfig2 = config2.parseConfig("pool2", "1", hadoopConfig2);
+      hadoopConfig2 = config2.parseConfig("pool2", hadoopConfig2);
       Assert.assertEquals("hp1 uuid", hadoopConfig2.get(Constants.DAOS_POOL_UUID));
       Assert.assertEquals("uuid of container", hadoopConfig2.get(Constants.DAOS_CONTAINER_UUID));
       Assert.assertEquals("765432", hadoopConfig2.get(Constants.DAOS_READ_BUFFER_SIZE));
@@ -227,7 +235,7 @@ public class DaosConfigFileTest {
       Assert.assertNotNull(config.getFromDaosFile(Constants.DAOS_DEFAULT_FS));
 
       Configuration hadoopConfig = new Configuration(false);
-      hadoopConfig = config.parseConfig("pool2", "2", hadoopConfig);
+      hadoopConfig = config.parseConfig("pool2c2", hadoopConfig);
       Assert.assertEquals("pool2 uuid", hadoopConfig.get(Constants.DAOS_POOL_UUID));
       Assert.assertEquals("c2 uuid", hadoopConfig.get(Constants.DAOS_CONTAINER_UUID));
       Assert.assertEquals("234567", hadoopConfig.get(Constants.DAOS_READ_BUFFER_SIZE));
@@ -243,7 +251,7 @@ public class DaosConfigFileTest {
       hadoopConfig2.set(Constants.DAOS_CHUNK_SIZE, "5698");
       hadoopConfig2.set(Constants.DAOS_POOL_UUID, "hp1 uuid");
       hadoopConfig2.set(Constants.DAOS_CONTAINER_UUID, "hc1 uuid");
-      hadoopConfig2 = config2.parseConfig("pool2", "2", hadoopConfig2);
+      hadoopConfig2 = config2.parseConfig("pool2c2", hadoopConfig2);
       Assert.assertEquals("hp1 uuid", hadoopConfig2.get(Constants.DAOS_POOL_UUID));
       Assert.assertEquals("hc1 uuid", hadoopConfig2.get(Constants.DAOS_CONTAINER_UUID));
       Assert.assertEquals("765432", hadoopConfig2.get(Constants.DAOS_READ_BUFFER_SIZE));
@@ -258,5 +266,30 @@ public class DaosConfigFileTest {
   @Test
   public void testParseConfigWithNoDefault() throws Exception {
     parseConfigWithDifferentDaosFile("daos-site-no-default.xml", this::noDefaultFunction);
+  }
+
+  @Test
+  public void testMergeWithExcludedAttribute() throws Exception {
+    Constructor<DaosConfigFile> constructor = DaosConfigFile.class.getDeclaredConstructor();
+    constructor.setAccessible(true);
+    Configuration hconfig = new Configuration(false);
+    DaosConfigFile config = constructor.newInstance();
+    config.merge("fs2", hconfig, null);
+    Assert.assertEquals("uuid of pool", hconfig.get(Constants.DAOS_POOL_UUID));
+    Assert.assertEquals("uuid of container", hconfig.get(Constants.DAOS_CONTAINER_UUID));
+
+    Set<String> exProps = new HashSet<>();
+    exProps.add(Constants.DAOS_POOL_UUID);
+    exProps.add(Constants.DAOS_CONTAINER_UUID);
+    Configuration hconfig2 = new Configuration(false);
+    hconfig2.set(Constants.DAOS_READ_BUFFER_SIZE, "765432");
+    hconfig2.set(Constants.DAOS_CHUNK_SIZE, "5698");
+    hconfig2.set(Constants.DAOS_POOL_UUID, "hp1 uuid");
+    hconfig2.set(Constants.DAOS_CONTAINER_UUID, "hc1 uuid");
+    config.merge("fs3", hconfig2, exProps);
+    Assert.assertEquals("hp1 uuid", hconfig2.get(Constants.DAOS_POOL_UUID));
+    Assert.assertEquals("hc1 uuid", hconfig2.get(Constants.DAOS_CONTAINER_UUID));
+    Assert.assertEquals("5698", hconfig2.get(Constants.DAOS_CHUNK_SIZE));
+    Assert.assertEquals("765432", hconfig2.get(Constants.DAOS_READ_BUFFER_SIZE));
   }
 }

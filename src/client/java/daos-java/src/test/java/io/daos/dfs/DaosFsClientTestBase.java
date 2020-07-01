@@ -2,9 +2,9 @@ package io.daos.dfs;
 
 public class DaosFsClientTestBase {
 
-  public static final String DEFAULT_POOL_ID = "6112d3ac-f99b-4e46-a2ab-549d9d56c069";
+  public static final String DEFAULT_POOL_ID = "07f519b1-f06a-4411-b0f5-638cc39d3825";
 //  public static final String DEFAULT_CONT_ID = "ffffffff-ffff-ffff-ffff-ffffffffffff";
-  public static final String DEFAULT_CONT_ID = "10e8b68a-c80a-4840-84fe-3b707ebb5475";
+  public static final String DEFAULT_CONT_ID = "9c9de970-2b43-43ec-ad2c-6a3fc33bd389";
 
   public static DaosFsClient prepareFs(String poolId, String contId) throws Exception {
     DaosFsClient.DaosFsClientBuilder builder = new DaosFsClient.DaosFsClientBuilder();

@@ -185,28 +185,13 @@ public class DaosFileSystem extends FileSystem {
     if (!getScheme().equals(name.getScheme())) {
       throw new IllegalArgumentException("schema should be " + getScheme());
     }
-    String authority = name.getAuthority();
-    if (Constants.DAOS_AUTHORITY_UNS.equals(authority)) {
-      throw new IllegalArgumentException("need uns id in authority, like daos://uns:1/...");
-    }
-    if (StringUtils.isEmpty(authority) || authority.startsWith(Constants.DAOS_AUTHORITY_UNS+":")) {
-      LOG.info("initializing from uns path, " + name.getPath());
-      String fields[] = authority.split(":");
-      if (fields.length != 2) {
-        throw new IllegalArgumentException("invalid authority, " + authority);
-      }
-      try {
-        int p = Integer.valueOf(fields[1]);
-        if (p < 1) {
-          throw new IllegalArgumentException("uns id should be no less than 1. " + authority);
-        }
-      } catch (NumberFormatException e) {
-        throw new IllegalArgumentException("bad uns id. should be integer. " + authority);
-      }
+    DunsInfo info = searchUnsPath(name.getPath());
+    if (info != null) {
+      LOG.info("initializing from uns path, " + name);
       uns = true;
-      initializeFromUns(name, conf);
+      initializeFromUns(name, conf, info);
     } else {
-      LOG.info("initializing from config file");
+      LOG.info("initializing from config file, " + name);
       uns = false;
       initializeFromConfigFile(name, conf);
     }
@@ -220,9 +205,11 @@ public class DaosFileSystem extends FileSystem {
    * hadoop URI
    * @param conf
    * hadoop configuration
+   * @param unsInfo
+   * information get from UNS path
    * @throws IOException
    */
-  private void initializeFromUns(URI name, Configuration conf) throws IOException {
+  private void initializeFromUns(URI name, Configuration conf, DunsInfo unsInfo) throws IOException {
     String path = name.getPath();
     if (!path.startsWith("/")) {
       throw new IllegalArgumentException("path should be started with /, " + path);
@@ -231,8 +218,8 @@ public class DaosFileSystem extends FileSystem {
     Set<String> exProps = new HashSet<>();
     exProps.add(Constants.DAOS_POOL_UUID);
     exProps.add(Constants.DAOS_CONTAINER_UUID);
-    DaosConfigFile.getInstance().merge("", conf, exProps);
-    parseUnsConfig(path, conf);
+    DaosConfigFile.getInstance().merge(name.getAuthority(), conf, exProps);
+    parseUnsConfig(conf, unsInfo);
     super.initialize(name, conf);
     validateAndConnect(name, conf);
   }
@@ -246,8 +233,8 @@ public class DaosFileSystem extends FileSystem {
    * @throws IOException
    */
   private DunsInfo searchUnsPath(String path) throws IOException {
-    if (!path.startsWith("/")) {
-      throw new IllegalArgumentException("UNS path should be absolute, " + path);
+    if ("/".equals(path) || !path.startsWith("/")) {
+      return null;
     }
     File file = new File(path);
     DunsInfo info = null;
@@ -265,15 +252,13 @@ public class DaosFileSystem extends FileSystem {
       }
       file = file.getParentFile();
     }
-    if (info == null) {
-      throw new IllegalArgumentException("no UNS path found from " + path +" or its ancestors");
+    if (info != null) {
+      unsPrefix = file.getAbsolutePath();
     }
-    unsPrefix = file.getAbsolutePath();
     return info;
   }
 
-  private void parseUnsConfig(String path, Configuration conf) throws IOException {
-    DunsInfo info = searchUnsPath(path);
+  private void parseUnsConfig(Configuration conf, DunsInfo info) throws IOException {
     if (!"POSIX".equalsIgnoreCase(info.getLayout())) {
       throw new IllegalArgumentException("expect POSIX file system, but " + info.getLayout());
     }
@@ -350,21 +335,7 @@ public class DaosFileSystem extends FileSystem {
    * @throws IOException
    */
   private void initializeFromConfigFile(URI name, Configuration conf) throws IOException {
-    String[] ipPort = name.getAuthority().split(":");
-    if (ipPort.length != 2 || StringUtils.isEmpty(ipPort[0]) || StringUtils.isEmpty(ipPort[1])) {
-      throw new IllegalArgumentException("authority should be in format ip:port. No colon in ip or port");
-    }
-
-    try {
-      if (Integer.valueOf(ipPort[1]) < Integer.valueOf(Constants.DAOS_CONFIG_CONTAINER_KEY_DEFAULT)) {
-        throw new IllegalArgumentException("container key " + ipPort[1] + " should be no less than " +
-                Constants.DAOS_CONFIG_CONTAINER_KEY_DEFAULT);
-      }
-    } catch (NumberFormatException e) {
-      throw new IllegalArgumentException("container key should be a integer. " + ipPort[1]);
-    }
-
-    conf = DaosConfigFile.getInstance().parseConfig(ipPort[0], ipPort[1], conf);
+    conf = DaosConfigFile.getInstance().parseConfig(name.getAuthority(), conf);
     super.initialize(name, conf);
 
     validateAndConnect(name, conf);
@@ -450,7 +421,7 @@ public class DaosFileSystem extends FileSystem {
         builder.ranks(svc);
       }
       this.daos = builder.build();
-      String tmpUri = name.getScheme() + "://" + name.getAuthority();
+      String tmpUri = name.getScheme() + "://" + (name.getAuthority() == null ? "/" : name.getAuthority());
       workPath = "/user/" + System.getProperty("user.name");
       this.uri = URI.create(tmpUri);
       if (uns) {
@@ -480,7 +451,7 @@ public class DaosFileSystem extends FileSystem {
 
   @Override
   public int getDefaultPort() {
-    return Integer.valueOf(Constants.DAOS_CONFIG_CONTAINER_KEY_DEFAULT);
+    return 1;
   }
 
   private void checkSizeMin(int size, int min, String msg) {

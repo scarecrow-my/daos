@@ -71,47 +71,33 @@ public class DaosFileSystemTest {
 
     UserGroupInformation.setLoginUser(UserGroupInformation.createRemoteUser("test"));
 
-    FileSystem fs1 = FileSystem.get(URI.create("daos://1234:56/"), cfg);
+    FileSystem fs1 = FileSystem.get(URI.create("daos://fs1/"), cfg);
     FileSystem fs2 = FileSystem.get(URI.create("daos://12345:567/"), cfg);
     Assert.assertNotSame(fs1, fs2);
     fs1.close();
     fs2.close();
+
+    FileSystem fs3 = FileSystem.get(URI.create("daos:///"), cfg);
+    Assert.assertNotNull(fs3);
+    fs3.close();
 
     String path = "/file/abc";
     DunsInfo info = new DunsInfo("123", "56", "POSIX", Constants.DAOS_POOL_SVC + "=0");
     PowerMockito.mockStatic(DaosUns.class);
     when(DaosUns.getAccessInfo(anyString(), eq(Constants.UNS_ATTR_NAME_HADOOP),
             eq(io.daos.dfs.Constants.UNS_ATTR_VALUE_MAX_LEN_DEFAULT), eq(false))).thenReturn(info);
-    URI uri = URI.create("daos://" + Constants.DAOS_AUTHORITY_UNS + ":" + unsId.getAndIncrement() + path);
+    URI uri = URI.create("daos://" + unsId.getAndIncrement() + path);
     FileSystem unsFs = FileSystem.get(uri, cfg);
     unsFs.close();
 
-    IllegalArgumentException ee = null;
+    IOException eie = null;
     try {
-      FileSystem.get(URI.create("daos://file/abc"), cfg);
-    } catch (IllegalArgumentException e) {
-      ee = e;
+      FileSystem.get(URI.create("daosss://file/abc"), cfg);
+    } catch (IOException e) {
+      eie = e;
     }
-    Assert.assertNotNull(ee);
-    Assert.assertTrue(ee.getMessage().contains("authority should be in format ip:port"));
-
-    ee = null;
-    try {
-      FileSystem.get(URI.create("daos://uns/abc"), cfg);
-    } catch (IllegalArgumentException e) {
-      ee = e;
-    }
-    Assert.assertNotNull(ee);
-    Assert.assertTrue(ee.getMessage().contains("need uns id in authority"));
-
-    ee = null;
-    try {
-      FileSystem.get(URI.create("daos://uns:abc/abc"), cfg);
-    } catch (IllegalArgumentException e) {
-      ee = e;
-    }
-    Assert.assertNotNull(ee);
-    Assert.assertTrue(ee.getMessage().contains("bad uns id. should be integer"));
+    Assert.assertNotNull(eie);
+    Assert.assertTrue(eie.getMessage().contains("No FileSystem for scheme: daosss"));
   }
 
   @Test
@@ -142,7 +128,7 @@ public class DaosFileSystemTest {
     PowerMockito.mockStatic(DaosUns.class);
     when(DaosUns.getAccessInfo(anyString(), eq(Constants.UNS_ATTR_NAME_HADOOP),
       eq(io.daos.dfs.Constants.UNS_ATTR_VALUE_MAX_LEN_DEFAULT), eq(false))).thenReturn(info);
-    URI uri = URI.create("daos://" + Constants.DAOS_AUTHORITY_UNS + ":" + unsId.getAndIncrement() + path);
+    URI uri = URI.create("daos://" + unsId.getAndIncrement() + path);
     FileSystem unsFs = FileSystem.get(uri, cfg);
     unsFs.close();
 
@@ -196,7 +182,7 @@ public class DaosFileSystemTest {
     cfg.set(Constants.DAOS_CONTAINER_UUID, "123");
     cfg.set(Constants.DAOS_POOL_SVC, "0");
     try {
-      fs.initialize(URI.create("daos://1234:56/root"), cfg);
+      fs.initialize(URI.create("daos://1234:56"), cfg);
     } catch (IllegalArgumentException e) {
       Assert.assertTrue(e.getMessage().contains(Constants.DAOS_POOL_UUID));
       throw e;
@@ -223,7 +209,7 @@ public class DaosFileSystemTest {
     cfg.set(Constants.DAOS_CONTAINER_UUID, "");
     cfg.set(Constants.DAOS_POOL_SVC, "0");
     try {
-      fs.initialize(URI.create("daos://1234:56/root"), cfg);
+      fs.initialize(URI.create("daos://1234:56/"), cfg);
     } catch (IllegalArgumentException e) {
       Assert.assertTrue(e.getMessage().contains(Constants.DAOS_CONTAINER_UUID));
       throw e;
@@ -250,7 +236,7 @@ public class DaosFileSystemTest {
     cfg.set(Constants.DAOS_CONTAINER_UUID, "123");
     cfg.set(Constants.DAOS_POOL_SVC, "");
     try {
-      URI uri = URI.create("daos://1234:56/root");
+      URI uri = URI.create("daos://1234:56/");
       fs.initialize(uri, cfg);
       Assert.assertEquals(new Path("/user", System.getProperty("user.name")).makeQualified(uri, null),
               fs.getWorkingDirectory());
@@ -291,7 +277,7 @@ public class DaosFileSystemTest {
     Configuration cfg = new Configuration(false);
     cfg.addResource("daos-site.xml");
     String s = cfg.get("fs.defaultFS");
-    Assert.assertEquals("daos://default:1", s);
+    Assert.assertEquals("daos:///", s);
     Assert.assertEquals(8388608, cfg.getInt("fs.daos.read.buffer.size", 0));
   }
 
@@ -305,7 +291,7 @@ public class DaosFileSystemTest {
     }
     cfg.addResource(tempFile.toURI().toURL(), false);
     String s = cfg.get("fs.defaultFS");
-    Assert.assertEquals("daos://default:1", s);
+    Assert.assertEquals("daos:///", s);
     Assert.assertEquals(8388608, cfg.getInt("fs.daos.read.buffer.size", 0));
   }
 
@@ -313,7 +299,7 @@ public class DaosFileSystemTest {
   public void testLoadingConfigFromCoreSite() throws Exception {
     Configuration cfg = new Configuration(true);
     String s = cfg.get("fs.defaultFS");
-    Assert.assertEquals("daos://id:2", s);
+    Assert.assertEquals("daos://id:2/", s);
     Assert.assertEquals(8388608, cfg.getInt("fs.daos.read.buffer.size", 0));
   }
 

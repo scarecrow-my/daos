@@ -35,6 +35,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import org.apache.commons.lang.ObjectUtils;
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -145,6 +146,15 @@ public final class DaosFsClient {
   }
 
   private static void loadLib() {
+    String env = "LD_PRELOAD";
+    String preload = System.getenv(env);
+    if (StringUtils.isBlank(preload)) {
+      throw new IllegalStateException(env + " need to be set as environment variable");
+    }
+    File soFile = new File(preload);
+    if ((!preload.endsWith(".so")) || !soFile.exists()) {
+      throw new IllegalArgumentException(env + " need to be set to a existed so file");
+    }
     try {
       System.loadLibrary(LIB_NAME);
       log.info("lib{}.so loaded from library", LIB_NAME);

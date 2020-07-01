@@ -24,9 +24,8 @@
 package io.daos.fs.hadoop;
 
 import java.io.InputStream;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Set;
+import java.lang.reflect.Field;
+import java.util.*;
 
 import javax.xml.parsers.DocumentBuilderFactory;
 
@@ -43,8 +42,8 @@ import org.w3c.dom.NodeList;
  * A class for reading daos-site.xml, if any, from class path as well as verifying and merging Hadoop configuration.
  *
  * <B>daos-site.xml</B>
- * Should be put under class path's root. If not present in class path, DAOS URI must be default URI (daos://default:0).
- * Pool UUID and container UUID must be provided in Hadoop configuration.
+ * Should be put under class path's root for initializing {@link DaosFileSystem}. If not present in class path, DAOS URI
+ * must be default URI (daos:///). And pool UUID and container UUID must be provided in Hadoop configuration then.
  *
  * <B>configuration verification</B>
  * pool UUID and container UUID must be provided by either Hadoop configuration or daos-site.xml if any. If DAOS URI
@@ -52,12 +51,14 @@ import org.w3c.dom.NodeList;
  * any.
  *
  * <B>merge configuration</B>
- * see {@link #getDaosUriDesc()} and {@link #parseConfig(String, String, Configuration)} for how configurations are
+ * see {@link #getDaosUriDesc()} and {@link #parseConfig(String, Configuration)} for how configurations are
  * read and merged.
  */
 public class DaosConfigFile {
 
   private Configuration defaultConfig;
+
+  private Set<String> fsConfigNames;
 
   private String daosUriDesc;
 
@@ -67,9 +68,9 @@ public class DaosConfigFile {
 
   private DaosConfigFile() {
     defaultConfig = new Configuration(false);
-    defaultConfig.addResource("daos-site.xml");
+    defaultConfig.addResource(Constants.DAOS_CONFIG_FILE_NAME);
     if (log.isDebugEnabled()) {
-      log.debug("configs from daos-site.xml");
+      log.debug("configs from " + Constants.DAOS_CONFIG_FILE_NAME);
       Iterator<Map.Entry<String, String>> it = defaultConfig.iterator();
       while (it.hasNext()) {
         Map.Entry<String, String> item = it.next();
@@ -98,6 +99,30 @@ public class DaosConfigFile {
     } catch (Exception e) {
       throw new IllegalStateException("cannot read description from " + exampleFile, e);
     }
+    fsConfigNames = collectFsConfigNames();
+  }
+
+  private Set<String> collectFsConfigNames() {
+    Set<String> fsNames = new HashSet<>();
+    Field fields[] = Constants.class.getFields();
+    for (Field field : fields) {
+      try {
+        Object value = field.get(null);
+        if (value instanceof String) {
+          String s = (String)value;
+          if (s.startsWith(Constants.DAOS_CONFIG_PREFIX) && s.length() > Constants.DAOS_CONFIG_PREFIX.length()) {
+            fsNames.add(s);
+          }
+        }
+      } catch (IllegalAccessException e) {
+        log.error("failed to get field value, " + field.getName());
+      }
+    }
+    return fsNames;
+  }
+
+  public Set<String> getFsConfigNames() {
+    return Collections.unmodifiableSet(fsConfigNames);
   }
 
   public static final DaosConfigFile getInstance() {
@@ -106,6 +131,7 @@ public class DaosConfigFile {
 
   /**
    * get configuration from daos-site.xml if any.
+   *
    * @param name
    * name of configuration
    * @return value of configuration, null if not configured.
@@ -116,6 +142,7 @@ public class DaosConfigFile {
 
   /**
    * get configuration from daos-site.xml, if any, with default values.
+   *
    * @param name
    * name of configuration
    * @param value
@@ -127,74 +154,59 @@ public class DaosConfigFile {
   }
 
   /**
-   * verify if pkey and ckey in URI are valid in terms of pool UUID and container UUID.
-   * For other configurations, fallback on default DAOS configuration if no specific configurations for pkey+c+ckey.
+   * verify if <code>authority</code> in URI are valid in terms of pool UUID and container UUID.
+   * For other configurations, fallback on default DAOS configuration if no specific configurations for
+   * <code>authority</code>.
    * Configurations from <code>hadoopConfig</code> have higher priority than ones from daos-site.xml.
-   * @param pkey
-   * pool key mapped to real pool UUID configured in daos-site.xml if any. see {@link #getDaosUriDesc()} for details.
-   * @param ckey
-   * container key mapped to real container UUID configured in daos-site.xml if any. see {@link #getDaosUriDesc()}
-   * for details.
+   * 
+   * @param authority
+   * A valid URI authority name to denote unique pool and container. The empty value means no authority provided in URI
+   * which is default URI. see {@link #getDaosUriDesc()} for details.
    * @param hadoopConfig
    * configuration from Hadoop, could be manipulated by upper layer application, like Spark
    * @return verified and merged configuration
    */
-  Configuration parseConfig(String pkey, String ckey, Configuration hadoopConfig) {
-    StringBuilder sb = new StringBuilder();
-    pkey = setUuid(pkey, Constants.DAOS_CONFIG_POOL_KEY_DEFAULT, Constants.DAOS_POOL_UUID, hadoopConfig);
-    sb.append(pkey);
-
-    ckey = setUuid(ckey, Constants.DAOS_CONFIG_CONTAINER_KEY_DEFAULT, Constants.DAOS_CONTAINER_UUID, hadoopConfig);
-    if (!ckey.isEmpty()) {
-      sb.append(Constants.DAOS_CONFIG_CONTAINER_KEY_PREFIX).append(ckey);
-    }
-    if (sb.length() > 0) {
-      sb.append('.');
-    }
+  Configuration parseConfig(String authority, Configuration hadoopConfig) {
+    setUuid(authority, Constants.DAOS_POOL_UUID, hadoopConfig);
+    setUuid(authority, Constants.DAOS_CONTAINER_UUID, hadoopConfig);
     //set other configurations after the UUIDs are set
-    return merge(sb.toString(), hadoopConfig, null);
+    return merge(StringUtils.isEmpty(authority) ? "" : (authority + "."), hadoopConfig, null);
   }
 
-  private String setUuid(String key, String defaultKey, String configName, Configuration hadoopConfig) {
+  private void setUuid(String authority, String configName, Configuration hadoopConfig) {
     String hid = hadoopConfig.get(configName);
-    if (defaultKey.equals(key)) {
-      String did = defaultConfig.get(configName);
-      if (!StringUtils.isEmpty(hid) && !StringUtils.isEmpty(did) && !hid.equals(did)) {
-        throw new IllegalArgumentException("Inconsistent value of " + configName + ", from hadoop: " + hid +
-                ". from " + Constants.DAOS_CONFIG_FILE_NAME + ": " + did +
-                ".\n Considering to change your URI to non-default. See daos URI description. \n" +
-                daosUriDesc);
-      }
-      if (StringUtils.isEmpty(hid)) { //make sure UUID is set
+    if (StringUtils.isEmpty(authority)) { // default URI
+      if (StringUtils.isEmpty(hid)) { // make sure UUID is set
+        String did = defaultConfig.get(configName);
         if (StringUtils.isEmpty(did)) {
           throw new IllegalArgumentException(configName + " is neither specified nor default value found.");
         }
         hadoopConfig.set(configName, did);
       }
-      return "";
+      return;
     }
     // non-default
-    if (StringUtils.isEmpty(hid)) { //make sure UUID is set
-      String prefix = Constants.DAOS_POOL_UUID.equals(configName) ?
-              key + "." : Constants.DAOS_CONFIG_CONTAINER_KEY_PREFIX + key + ".";
-      String did = defaultConfig.get(prefix + configName) ;
+    if (StringUtils.isEmpty(hid)) { // make sure UUID is set
+      String did = defaultConfig.get(authority + "." + configName) ;
       if (StringUtils.isEmpty(did)) {
-        throw new IllegalArgumentException(configName + " is neither specified nor default value found for key " +
-                prefix);
+        throw new IllegalArgumentException(configName + " is neither specified nor default value found for authority " +
+                authority);
       }
       hadoopConfig.set(configName, did);
     }
-    return key;
   }
 
-  public Configuration merge(String prefix, Configuration hadoopConfig, Set<String> excludeProps) {
-    Iterator<Map.Entry<String, String>> it = defaultConfig.iterator();
+  public Configuration merge(String authority, Configuration hadoopConfig, Set<String> excludeProps) {
+    Iterator<String> it = fsConfigNames.iterator();
     while (it.hasNext()) {
-      Map.Entry<String, String> item = it.next();
-      String name = item.getKey();
-      if (name.startsWith("fs.daos.") && (excludeProps == null || !excludeProps.contains(name))) {
+      String name = it.next();
+      if (excludeProps == null || !excludeProps.contains(name)) {
         if (hadoopConfig.get(name) == null) { //not set by user
-          hadoopConfig.set(name, defaultConfig.get(prefix + name, item.getValue()));
+          String value = StringUtils.isEmpty(authority) ? defaultConfig.get(name) :
+            defaultConfig.get(authority + name, defaultConfig.get(name));
+          if (value != null) {
+            hadoopConfig.set(name, value);
+          }
         }
       }
     }
@@ -206,6 +218,7 @@ public class DaosConfigFile {
    * - how DAOS URI is constructed
    * - how pool UUID and container UUID are mapped
    * - how config values are read.
+   *
    * @return DAOS URI description
    */
   public String getDaosUriDesc() {

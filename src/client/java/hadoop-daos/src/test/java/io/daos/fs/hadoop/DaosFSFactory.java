@@ -20,6 +20,7 @@ package io.daos.fs.hadoop;
 
 import io.daos.dfs.DaosFile;
 import io.daos.dfs.DaosFsClient;
+import org.apache.commons.lang.StringUtils;
 import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.fs.FileSystem;
 
@@ -29,8 +30,8 @@ import java.io.IOException;
  *
  */
 public class DaosFSFactory {
-  public final static String defaultPoolId = "6112d3ac-f99b-4e46-a2ab-549d9d56c069";
-  public final static String defaultContId = "10e8b68a-c80a-4840-84fe-3b707ebb5475";
+  public final static String defaultPoolId = "07f519b1-f06a-4411-b0f5-638cc39d3825";
+  public final static String defaultContId = "9c9de970-2b43-43ec-ad2c-6a3fc33bd389";
   public final static String pooluuid = System.getProperty("pool_id", defaultPoolId);
   public final static String contuuid = System.getProperty("cont_id", defaultContId);
   public final static String svc = "0";
@@ -48,13 +49,13 @@ public class DaosFSFactory {
     return createFS();
   }
 
-  public synchronized static DaosFsClient getFsClient() throws IOException{
+  public synchronized static DaosFsClient getFsClient() throws IOException {
     DaosFsClient.DaosFsClientBuilder builder = new DaosFsClient.DaosFsClientBuilder();
     builder.poolId(pooluuid).containerId(contuuid);
     return builder.build();
   }
 
-  private static DaosFsClient prepareFs()throws IOException{
+  private static DaosFsClient prepareFs() throws IOException {
     try {
       DaosFsClient client = getFsClient();
       //clear all content
