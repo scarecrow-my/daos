@@ -95,7 +95,7 @@ $ getfattr -d -m - <your path>
 
 * Without DAOS UNS Path
 
-The simple form of URI is "daos:///". Please check description of
+The simple form of URI is "daos:///\[sub path\]". Please check description of
 "fs.defaultFS" in
 [example](hadoop-daos/src/main/resources/daos-site-example.xml) for how to
 configure filesystem. In this way, preferred configurations are in
