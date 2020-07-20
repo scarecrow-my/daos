@@ -1,0 +1,54 @@
+hosts:
+  test_servers:
+    - wolf-154
+    - wolf-155
+  test_clients:
+    - wolf-75
+timeout: 900
+server_config:
+  servers_per_host: 2
+  name: daos_server
+  servers:
+    0:
+      pinned_numa_node: 0
+      nr_xs_helpers: 1
+      fabric_iface: ib0
+      fabric_iface_port: 31416
+      log_file: daos_server0.log
+      bdev_class: nvme
+      bdev_list: ["0000:8a:00.0"]
+      scm_class: dcpm
+      scm_list: ["/dev/pmem0"]
+      scm_mount: /mnt/daos0
+    1:
+      pinned_numa_node: 1
+      nr_xs_helpers: 1
+      fabric_iface: ib1
+      fabric_iface_port: 31417
+      log_file: daos_server1.log
+      bdev_class: nvme
+      bdev_list: ["0000:8b:00.0"]
+      scm_class: dcpm
+      scm_list: ["/dev/pmem1"]
+      scm_mount: /mnt/daos1
+pool:
+    mode: 146
+    name: daos_server
+    scm_size: 500000000000
+    nvme_size: 700000000000
+    control_method: dmg
+ior:
+    client_processes:
+        np_16:
+            np: 16
+    test_file: daos:testFile
+    repetitions: 1
+    daos_destroy: False
+    iorflags:
+        flags: "-v -w -r -R -k"
+    api: DAOS
+    transfer_size: '2k'
+    block_size: '8G'
+    objectclass: !mux
+        oclass_SX:
+            daos_oclass: "SX"

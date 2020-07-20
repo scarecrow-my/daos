@@ -49,7 +49,7 @@ class NvmeHealth(ServerFillUp):
         no_of_pools = self.params.get("number_of_pools", '/run/pool/*')
         #Stop the servers to run SPDK too to get the server capacity
         self.stop_servers()
-        storage = self.get_server_capacity()
+        storage = self.get_nvme_max_capacity()
         self.start_servers()
 
         single_pool_nvme_size = int((storage * 0.80)/no_of_pools)
