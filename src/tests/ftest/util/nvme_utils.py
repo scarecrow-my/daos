@@ -92,6 +92,8 @@ class ServerFillUp(IorTestBase):
         self.dmg = None
         self.container_info = {}
         self.set_faulty_device = False
+        self.scm_fill = False
+        self.nvme_fill = False
 
     def setUp(self):
         """Set up each test case."""
@@ -387,8 +389,14 @@ class ServerFillUp(IorTestBase):
             replica_server = _replica[0]
 
         print('Replica Server = {}'.format(replica_server))
-        nvme_free_space = self.pool.get_pool_daos_space()["s_free"][1]
-        _tmp_block_size = (((nvme_free_space/100)*self.capacity)/self.processes)
+        if self.scm_fill:
+            free_space = self.pool.get_pool_daos_space()["s_free"][0]
+        elif self.nvme_fill:
+            free_space = self.pool.get_pool_daos_space()["s_free"][1]
+        else:
+            self.fail('Provide storage type (SCM/NVMe) to be filled')
+
+        _tmp_block_size = (((free_space/100)*self.capacity)/self.processes)
         _tmp_block_size = int(_tmp_block_size / int(replica_server))
         block_size = ((_tmp_block_size/int(self.ior_transfer_size))
                       *int(self.ior_transfer_size))
@@ -463,18 +471,22 @@ class ServerFillUp(IorTestBase):
         #Create the Pool
         self.pool.create()
 
-    def start_ior_load(self):
+    def start_ior_load(self, storage='NVMe', precent=1):
         """
-        Method to Fill up the server. It will get the maximum Storage space and
-        create the pool.Fill up the server based on % amount given using IOR.
+        Method to Fill up the server either SCM or NVMe.
+        Fill up based on percent amount given using IOR.
+
+        arg:
+            storage(string): SCM or NVMe, by default it will fill NVMe.
+            precent(int): % of storage to be filled
 
         Returns:
             None
         """
-        #Method to get the storage capacity.Replace with dmg options in future
-        #when it's available. This is time consuming so store the size in
-        #file to avoid rerunning the same logic for future test cases.
-        #This will be only run for first test case.
+        self.capacity = precent
+        # Fill up NVMe by default
+        self.nvme_fill = True if 'NVMe' in storage else False
+        self.scm_fill = True if 'SCM' in storage else False
 
         # Create the IOR threads
         job = threading.Thread(target=self.start_ior_thread,

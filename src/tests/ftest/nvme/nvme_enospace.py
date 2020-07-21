@@ -50,11 +50,14 @@ class NvmeHealth(ServerFillUp):
         #pool = TestPool(self.context, dmg_command=self.get_dmg_command())
         #pool.get_params(self)
         #pool.create()
-        self.create_pool_max_size(scm=True)
-        pool_info = self.pool.pool_percentage_used()
-        print (pool_info)
+        self.create_pool_max_size()
+        print (self.pool.pool_percentage_used())
 
         # Disable the aggregation
         self.pool.set_property("reclaim", "disabled")
 
+        #Fill % of SCM pool
+        self.start_ior_load(storage='SCM', precent=1)
+
+        print (self.pool.pool_percentage_used())
         self.pool.destroy()
