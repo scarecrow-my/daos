@@ -21,18 +21,49 @@
   Any reproduction of computer software, computer software documentation, or
   portions thereof marked with this legend must also reproduce the markings.
 '''
-import os
-from nvme_utils import ServerFillUp, get_device_ids
-from test_utils_pool import TestPool
-from dmg_utils import DmgCommand
-from command_utils_base import CommandFailure
+from nvme_utils import ServerFillUp
+from avocado.core.exceptions import TestFail
+from general_utils import get_log_file, run_task
 
-class NvmeHealth(ServerFillUp):
+class NvmeEnospace(ServerFillUp):
     # pylint: disable=too-many-ancestors
     """
-    Test Class Description: To validate NVMe health test cases
+    Test Class Description: To validate DER_NOSPACE for SCM and NVMe
     :avocado: recursive
     """
+    def der_enspace_log_count(self):
+        """
+        Function to count the DER_NOSPACE and other ERR in client log.
+
+        arg:
+            None
+
+        returns:
+            der_nospace_count(int): DER_NOSPACE count from client log.
+            other_errors_count(int): Other Error count from client log.
+
+        """
+        #Get the Client side Error from client_log file.
+        cmd = 'cat {} | grep ERR'.format(get_log_file(self.client_log))
+        task = run_task(self.hostlist_clients, cmd)
+        for _rc_code, _node in task.iter_retcodes():
+            if _rc_code == 1:
+                self.fail("Failed to run cmd {} on {}".format(cmd, _node))
+        for buf, _nodes in task.iter_buffers():
+            output = str(buf).split('\n')
+
+        der_nospace_count = 0
+        other_errors_count = 0
+        for line in output:
+            if 'DER_NOSPACE' in line:
+                der_nospace_count += 1
+            else:
+                other_errors_count += 1
+        print('Total Error={} DER_NOSPACE Error={} Other Error={}'
+              .format(len(output), der_nospace_count, other_errors_count))
+
+        return der_nospace_count, other_errors_count
+
     def test_monitor_for_large_pools(self):
         """Jira ID: DAOS-4722.
 
@@ -47,17 +78,33 @@ class NvmeHealth(ServerFillUp):
         # pylint: disable=attribute-defined-outside-init
         # pylint: disable=too-many-branches
 
-        #pool = TestPool(self.context, dmg_command=self.get_dmg_command())
-        #pool.get_params(self)
-        #pool.create()
         self.create_pool_max_size()
-        print (self.pool.pool_percentage_used())
+        print(self.pool.pool_percentage_used())
 
         # Disable the aggregation
         self.pool.set_property("reclaim", "disabled")
 
-        #Fill % of SCM pool
-        self.start_ior_load(storage='SCM', precent=1)
+        #Fill 75% of SCM pool
+        self.start_ior_load(storage='SCM', precent=75)
 
-        print (self.pool.pool_percentage_used())
+        print(self.container_info)
+        print(self.pool.pool_percentage_used())
+
+        try:
+            #Fill 10% more to SCM ,which suppose to Fail because no SCM space
+            self.start_ior_load(storage='SCM', precent=10)
+            ##self.fail('This test suppose to Fail but it got Passed')
+        except TestFail as _error:
+            self.log.info('Test should get failed as expected')
+
+        der_count, other_error = self.der_enspace_log_count()
+        if other_error > 0:
+            self.fail('Found other count {} in client log {}'
+                      .format(other_error, self.client_log))
+        if der_count != 1:
+            self.fail('Expected DER_NOSPACE should be 1 and Found {}'
+                      .format(der_count))
+
+        #Destroy the container and loop through again
+        print(self.container_info)
         self.pool.destroy()

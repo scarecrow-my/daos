@@ -334,8 +334,9 @@ class ServerFillUp(IorTestBase):
             self.container_info["{}{}{}"
                                 .format(self.ior_daos_oclass,
                                         self.ior_apis,
-                                        self.ior_transfer_size)] = [str(
-                                            uuid.uuid4()), block_size]
+                                        self.ior_transfer_size)] = [
+                                            str(ior_cmd.daos_cont.value),
+                                            block_size]
         elif 'Read' in operation:
             ior_cmd.flags.update(self.ior_read_flags)
             #Retrieve the container UUID and block size for reading purpose
@@ -348,12 +349,14 @@ class ServerFillUp(IorTestBase):
 
         # Define the job manager for the IOR command
         manager = Mpirun(ior_cmd, mpitype="mpich")
+
         manager.job.daos_cont.update(self.container_info
                                      ["{}{}{}"
                                       .format(self.ior_daos_oclass,
                                               self.ior_apis,
                                               self.ior_transfer_size)][0])
-        env = ior_cmd.get_default_env(str(manager))
+
+        env = ior_cmd.get_default_env(str(manager), self.client_log)
         manager.assign_hosts(self.hostlist_clients, self.workdir, None)
         manager.assign_processes(self.processes)
         manager.assign_environment(env, True)
@@ -390,9 +393,9 @@ class ServerFillUp(IorTestBase):
 
         print('Replica Server = {}'.format(replica_server))
         if self.scm_fill:
-            free_space = self.pool.get_pool_daos_space()["s_free"][0]
+            free_space = self.pool.get_pool_daos_space()["s_total"][0]
         elif self.nvme_fill:
-            free_space = self.pool.get_pool_daos_space()["s_free"][1]
+            free_space = self.pool.get_pool_daos_space()["s_total"][1]
         else:
             self.fail('Provide storage type (SCM/NVMe) to be filled')
 

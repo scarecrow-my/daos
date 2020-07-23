@@ -14,7 +14,6 @@ server_config:
       nr_xs_helpers: 1
       fabric_iface: ib0
       fabric_iface_port: 31416
-      log_file: daos_server0.log
       bdev_class: nvme
       bdev_list: ["0000:81:00.0"]
       scm_class: dcpm
@@ -25,7 +24,6 @@ server_config:
       nr_xs_helpers: 1
       fabric_iface: ib1
       fabric_iface_port: 31417
-      log_file: daos_server1.log
       bdev_class: nvme
       bdev_list: ["0000:da:00.0"]
       scm_class: dcpm
@@ -44,9 +42,10 @@ ior:
     repetitions: 1
     daos_destroy: False
     iorflags:
-        ior_flags: "-w -F -r -R -k -G 1"
+        ior_flags: "-w -F -k -G 1"
         ior_api: DAOS
         transfer_size: 2048
         objects:
          RP_3G1:
-          obj_class: "SX"            
+          obj_class: "SX"
+
