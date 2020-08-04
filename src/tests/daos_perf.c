@@ -283,7 +283,6 @@ dkey_gen_int(char *buf, int rank)
 	ts_dkey_idx++;
 }
 
-
 static int
 dkey_update_or_fetch(daos_handle_t oh, enum ts_op_type op_type, char *dkey,
 		     daos_epoch_t *epoch)
@@ -354,7 +353,10 @@ objects_update(d_rank_t rank)
 		for (j = 0; j < ts_dkey_p_obj; j++) {
 			char	 dkey[DTS_KEY_LEN];
 
-			dts_key_gen(dkey, DTS_KEY_LEN, "blade");
+			if (ts_flat_obj)
+				dkey_gen_int(dkey, ts_ctx.tsc_mpi_rank);
+			else
+				dts_key_gen(dkey, DTS_KEY_LEN, "blade");
 			rc = dkey_update_or_fetch(ts_ohs[i], TS_DO_UPDATE, dkey,
 						  &epoch);
 			if (rc)
