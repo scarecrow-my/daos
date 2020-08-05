@@ -390,6 +390,7 @@ dc_obj_shard_rw(struct dc_obj_shard *shard, enum obj_rpc_opc opc,
 		DF_U64"\n", req, opc, DP_UOID(shard->do_id), (int)dkey->iov_len,
 		(char *)dkey->iov_buf, tgt_ep.ep_rank, tgt_ep.ep_tag,
 		args->auxi.epoch);
+	/** D_PRINT("%d %d\n", tgt_ep.ep_rank, tgt_ep.ep_tag); */
 	if (rc != 0)
 		D_GOTO(out_pool, rc);
 

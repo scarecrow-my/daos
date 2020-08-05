@@ -1655,7 +1655,7 @@ obj_req_get_tgts(struct dc_object *obj, enum obj_rpc_opc opc, int *shard,
 						    opc, to_leader);
 				if (rc < 0)
 					goto out;
-			}
+		}
 			shard_idx = rc;
 			shard_cnt = 1;
 		} else {

@@ -180,8 +180,9 @@ set_value_buffer(char *buffer, int idx)
 
 static int
 akey_update_or_fetch(daos_handle_t oh, enum ts_op_type op_type,
-		     char *dkey, char *akey, daos_epoch_t *epoch,
-		     int *indices, int idx, char *verify_buff)
+		     char *dkey, uint64_t dkey_num, char *akey,
+		     daos_epoch_t *epoch, int *indices, int idx,
+		     char *verify_buff)
 {
 	struct dts_io_credit *cred;
 	daos_iod_t	     *iod;
@@ -285,7 +286,7 @@ dkey_gen_int(char *buf, int rank)
 
 static int
 dkey_update_or_fetch(daos_handle_t oh, enum ts_op_type op_type, char *dkey,
-		     daos_epoch_t *epoch)
+		     uint64_t dkey_num, daos_epoch_t *epoch)
 {
 	int		*indices;
 	char		 akey[DTS_KEY_LEN];
@@ -302,8 +303,9 @@ dkey_update_or_fetch(daos_handle_t oh, enum ts_op_type op_type, char *dkey,
 		else
 			dts_key_gen(dkey, DTS_KEY_LEN, "blade");
 		for (j = 0; j < ts_recx_p_akey; j++) {
-			rc = akey_update_or_fetch(oh, op_type, dkey, akey,
-						  epoch, indices, j, NULL);
+			rc = akey_update_or_fetch(oh, op_type, dkey, dkey_num,
+						  akey, epoch, indices, j,
+						  NULL);
 			if (rc)
 				goto failed;
 		}
@@ -324,7 +326,7 @@ objects_update(d_rank_t rank)
 	daos_epoch_t	epoch = 0;
 
 	if (ts_flat_obj)
-		ofeats = DAOS_OF_KV_FLAT;
+		ofeats = DAOS_OF_KV_FLAT | DAOS_OF_DKEY_UINT64;
 
 	dts_reset_key();
 
@@ -358,7 +360,7 @@ objects_update(d_rank_t rank)
 			else
 				dts_key_gen(dkey, DTS_KEY_LEN, "blade");
 			rc = dkey_update_or_fetch(ts_ohs[i], TS_DO_UPDATE, dkey,
-						  &epoch);
+						  j, &epoch);
 			if (rc)
 				return rc;
 		}
@@ -369,7 +371,8 @@ objects_update(d_rank_t rank)
 }
 
 static int
-dkey_verify(daos_handle_t oh, char *dkey, daos_epoch_t *epoch)
+dkey_verify(daos_handle_t oh, char *dkey, uint64_t dkey_num,
+	    daos_epoch_t *epoch)
 {
 	int	 i;
 	int	*indices;
@@ -384,7 +387,7 @@ dkey_verify(daos_handle_t oh, char *dkey, daos_epoch_t *epoch)
 
 	for (i = 0; i < ts_recx_p_akey; i++) {
 		set_value_buffer(ground_truth, i);
-		rc = akey_update_or_fetch(oh, TS_DO_FETCH, dkey, akey, epoch,
+		rc = akey_update_or_fetch(oh, TS_DO_FETCH, dkey, dkey_num, akey, epoch,
 					  indices, i, test_string);
 		if (rc)
 			goto failed;
@@ -421,7 +424,7 @@ objects_verify(void)
 				dts_key_gen(dkey, DTS_KEY_LEN, "blade");
 
 			for (k = 0; k < ts_akey_p_dkey; k++) {
-				rc = dkey_verify(ts_ohs[i], dkey, &epoch);
+				rc = dkey_verify(ts_ohs[i], dkey, j, &epoch);
 				if (rc != 0)
 					return rc;
 			}
@@ -475,7 +478,7 @@ objects_fetch(d_rank_t rank)
 			else
 				dts_key_gen(dkey, DTS_KEY_LEN, "blade");
 			rc = dkey_update_or_fetch(ts_ohs[i], TS_DO_FETCH, dkey,
-						  &epoch);
+						  j, &epoch);
 			if (rc != 0)
 				return rc;
 		}
